@@ -1,0 +1,2283 @@
+<!-- ... existing code ... -->
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ISP Simulator: Operação NOC v3.0</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+<!-- ... existing code ... -->
+        .float-anim {
+            animation: float-slow 2.5s ease-in-out infinite;
+        }
+        @keyframes walk-dot {
+            0%, 100% { transform: translate(0, 0); }
+            50% { transform: translate(6px, -2px); }
+        }
+        .staff-avatar {
+            animation: walk-dot 3s ease-in-out infinite;
+        }
+    </style>
+</head>
+<body class="h-screen w-screen flex flex-col justify-between relative">
+
+    <!-- TOAST ALERTS CONTAINER -->
+    <div id="toast-container" class="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 flex flex-col gap-1.5 pointer-events-none items-center"></div>
+
+    <!-- MODAL INICIAL: ESCOLHA DE MODO E RITMO -->
+    <div id="start-modal" class="fixed inset-0 z-50 bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-4">
+        <div class="bg-slate-900 border border-slate-700/80 rounded-xl max-w-2xl w-full p-6 shadow-2xl relative overflow-hidden">
+            <div class="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-emerald-500 via-cyan-500 to-blue-600"></div>
+            <div class="flex items-center justify-between mb-2">
+                <div class="flex items-center gap-3">
+                    <div class="w-11 h-11 rounded-lg bg-emerald-500/10 border border-emerald-500/40 flex items-center justify-center text-2xl">🌐</div>
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <h1 class="text-xl font-extrabold text-white tracking-tight">ISP SIMULATOR: OPERAÇÃO NOC</h1>
+                            <span class="text-[10px] mono font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-2 py-0.5 rounded">v3.0 FTTH & XGS-PON</span>
+                        </div>
+                        <p class="text-xs text-slate-400">Arquitetura GPON 64/128/256 por PON • Ritmo Estratégico Calibrado • Logística Asiática vs Nacional</p>
+                    </div>
+                </div>
+                <button onclick="startGame('raiz')" class="text-xs text-slate-400 hover:text-white px-2.5 py-1 rounded bg-slate-800 border border-slate-700">✕ Iniciar Rápido</button>
+            </div>
+            <hr class="border-slate-800 my-3.5">
+
+            <!-- Seletor de Frequência de Eventos -->
+            <div class="mb-4 bg-slate-950/90 border border-slate-800 rounded-lg p-3 flex items-center justify-between">
+                <div>
+                    <div class="text-xs font-bold text-cyan-400">⏱️ Ritmo de Eventos & Incidentes Climáticos</div>
+                    <div class="text-[11px] text-slate-400">Tempo base: <strong>8 segundos por dia (em 1x)</strong> com previsão do tempo antecipada.</div>
+                </div>
+                <select id="start-pacing-select" onchange="setEventFrequency(this.value)" class="bg-slate-900 border border-slate-700 text-xs text-white font-semibold rounded px-2.5 py-1.5">
+                    <option value="calmo" selected>🌿 Calmo / Realista (Recomendado)</option>
+                    <option value="normal">⚖️ Moderado (Padrão)</option>
+                    <option value="intenso">⛈️ Intenso (Caos Amazônico)</option>
+                </select>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                <!-- Modo Raiz -->
+                <div onclick="startGame('raiz')" class="cursor-pointer group bg-slate-800/60 hover:bg-emerald-950/40 border-2 border-slate-700 hover:border-emerald-500 rounded-lg p-4 transition-all">
+                    <div class="flex justify-between items-center mb-2">
+                        <span class="font-bold text-sm text-emerald-400 group-hover:text-emerald-300">🛠️ Modo Provedor Raiz</span>
+                        <span class="text-[10px] bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded font-semibold">TÉCNICO + GESTÃO</span>
+                    </div>
+                    <p class="text-xs text-slate-300 leading-relaxed mb-3">Comece com 1 placa OLT de <strong>64 clientes por PON</strong> e faça upgrade para Splitters 1:128 e chassis <strong>XGS-PON (256/PON)</strong>. Instale CTOs nos bairros, calibre o sinal óptico e gerencie a frota terrestre e fluvial.</p>
+                    <ul class="text-[11px] text-slate-400 space-y-1">
+                        <li>• OLT 64 ➔ 128 ➔ 256 clientes por porta PON</li>
+                        <li>• Importação de Contêiner Asiático (-50%) vs Expresso</li>
+                        <li>• Check Port óptico (-18 dBm a -29 dBm) e CTOs</li>
+                    </ul>
+                </div>
+
+                <!-- Modo Investidor -->
+                <div onclick="startGame('investidor')" class="cursor-pointer group bg-slate-800/60 hover:bg-cyan-950/40 border-2 border-slate-700 hover:border-cyan-500 rounded-lg p-4 transition-all">
+                    <div class="flex justify-between items-center mb-2">
+                        <span class="font-bold text-sm text-cyan-400 group-hover:text-cyan-300">👔 Modo Investidor Auto</span>
+                        <span class="text-[10px] bg-cyan-500/20 text-cyan-300 px-2 py-0.5 rounded font-semibold">EXECUTIVO</span>
+                    </div>
+                    <p class="text-xs text-slate-300 leading-relaxed mb-3">Foque na expansão de novos bairros, compra de lotes de equipamentos, upgrades de OLT e contratações. O NOC provisiona clientes da fila e despacha equipes de reparo automaticamente.</p>
+                    <ul class="text-[11px] text-slate-400 space-y-1">
+                        <li>• Provisionamento automático de ONUs na fila</li>
+                        <li>• Despacho automático de técnicos e barcos</li>
+                        <li>• Foco em expansão, licenças Anatel e cursos NIC.br</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-slate-400 flex items-center justify-between">
+                <span>💡 <strong>Dica:</strong> Pressione <kbd class="px-1.5 py-0.5 bg-slate-800 text-slate-200 rounded border border-slate-700 mono text-[10px]">ESPAÇO</kbd> ou clique em <strong>[⏸️ PAUSAR]</strong> a qualquer momento para planejar sem pressa.</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL DE GAME OVER -->
+    <div id="gameover-modal" class="hidden fixed inset-0 z-50 bg-red-950/90 backdrop-blur-md flex items-center justify-center p-4">
+        <div class="bg-slate-900 border-2 border-red-600 rounded-xl max-w-lg w-full p-6 text-center shadow-2xl">
+            <div class="text-5xl mb-3">🔌</div>
+            <h2 class="text-2xl font-bold text-red-500 mb-2">SESSÃO BGP ENCERRADA — FALÊNCIA!</h2>
+            <p class="text-sm text-slate-300 mb-6">Sua dívida ultrapassou o limite de segurança bancária (-R$ 4.000) e o fornecedor de trânsito IP cortou seu Link Dedicado.</p>
+            <div class="bg-slate-950 p-4 rounded-lg border border-slate-800 mb-6 text-left text-xs space-y-1.5 mono">
+                <div class="flex justify-between"><span>Dias Operados:</span> <span id="go-days" class="text-white font-bold">0</span></div>
+                <div class="flex justify-between"><span>Pico de Clientes Conectados:</span> <span id="go-clients" class="text-emerald-400 font-bold">0</span></div>
+                <div class="flex justify-between"><span>Arquitetura OLT:</span> <span id="go-olt-arch" class="text-cyan-400 font-bold">GPON 1:64</span></div>
+            </div>
+            <button onclick="location.reload()" class="w-full py-3 bg-red-600 hover:bg-red-500 text-white font-bold rounded-lg transition shadow-lg">🔄 Reiniciar Operação do Zero</button>
+        </div>
+    </div>
+
+    <!-- BARRA SUPERIOR DE COMANDO (TOP COMMAND BAR) -->
+    <header class="h-14 bg-slate-950/95 border-b border-slate-800/90 px-3.5 flex items-center justify-between z-20 shrink-0">
+        <!-- Esquerda: Identidade do Provedor, Clima, Previsão e Modo -->
+        <div class="flex items-center gap-2">
+            <div class="flex items-center gap-1.5">
+                <span class="w-2.5 h-2.5 rounded-full led-green"></span>
+                <span class="font-extrabold text-sm tracking-wider text-white">TAPAJÓS<span class="text-cyan-400">NET</span> <span class="text-[10px] mono font-normal text-emerald-400">v3.0</span></span>
+            </div>
+            <div class="h-4 w-[1px] bg-slate-800"></div>
+            <button id="btn-toggle-mode" onclick="toggleGameMode()" class="text-[11px] px-2 py-1 rounded border border-emerald-500/40 bg-emerald-500/10 text-emerald-300 hover:bg-emerald-500/20 transition flex items-center gap-1">
+                <span>🛠️ Modo: Raiz</span>
+            </button>
+            <div id="top-weather-pill" class="text-[11px] px-2 py-1 rounded bg-slate-900 border border-slate-800 text-sky-300 font-medium flex items-center gap-1.5">
+                <span>☀️ Sol (Prev: ☀️ Sol)</span>
+            </div>
+            <div id="badge-license" class="hidden 2xl:flex text-[11px] px-2 py-1 rounded bg-slate-900 border border-amber-500/30 text-amber-300 font-medium">
+                📜 Lic. Nv.1
+            </div>
+        </div>
+
+        <!-- Centro: 5 Abas da Viewport Principal -->
+        <nav class="flex items-center gap-1 bg-slate-900/90 p-1 rounded-lg border border-slate-800">
+            <button onclick="switchTab('hq')" id="tab-btn-hq" class="tab-btn px-2.5 py-1.5 rounded-md text-xs font-semibold bg-cyan-600 text-white transition flex items-center gap-1.5 shadow">
+                🏢 Sede & Loja
+            </button>
+            <button onclick="switchTab('noc')" id="tab-btn-noc" class="tab-btn px-2.5 py-1.5 rounded-md text-xs font-semibold text-slate-400 hover:text-white hover:bg-slate-800 transition flex items-center gap-1.5 relative">
+                🖥️ Rack OLT (<span id="tab-olt-arch" class="mono text-[10px] text-emerald-300">64/PON</span>)
+                <span id="badge-olt-alert" class="hidden w-2 h-2 rounded-full bg-amber-400 animate-ping"></span>
+            </button>
+            <button onclick="switchTab('map')" id="tab-btn-map" class="tab-btn px-2.5 py-1.5 rounded-md text-xs font-semibold text-slate-400 hover:text-white hover:bg-slate-800 transition flex items-center gap-1.5 relative">
+                🗺️ Mapa & CTOs
+                <span id="badge-map-alert" class="hidden w-2 h-2 rounded-full bg-red-500 animate-ping"></span>
+            </button>
+            <button onclick="switchTab('callcenter')" id="tab-btn-callcenter" class="tab-btn px-2.5 py-1.5 rounded-md text-xs font-semibold text-slate-400 hover:text-white hover:bg-slate-800 transition flex items-center gap-1.5">
+                📞 Call Center & Planos
+                <span id="badge-ticket-count" class="px-1.5 py-0.2 bg-purple-600 text-white rounded-full text-[10px] mono">1</span>
+            </button>
+            <button onclick="switchTab('email')" id="tab-btn-email" class="tab-btn px-2.5 py-1.5 rounded-md text-xs font-semibold text-slate-400 hover:text-white hover:bg-slate-800 transition flex items-center gap-1.5">
+                💻 E-mail, RH & Banco
+                <span id="badge-email-count" class="px-1.5 py-0.2 bg-blue-600 text-white rounded-full text-[10px] mono">3</span>
+            </button>
+        </nav>
+
+        <!-- Direita: Ritmo, Relógio e Controles de Pause / Velocidade (1x, 2x, 3x) -->
+        <div class="flex items-center gap-2">
+            <select id="header-pacing-select" onchange="setEventFrequency(this.value)" title="Frequência de Eventos Aleatórios" class="hidden xl:block bg-slate-900 border border-slate-800 text-[11px] text-slate-300 rounded px-2 py-1">
+                <option value="calmo" selected>🌿 Eventos: Calmo</option>
+                <option value="normal">⚖️ Eventos: Normal</option>
+                <option value="intenso">⛈️ Eventos: Intenso</option>
+            </select>
+
+            <div class="text-right mono leading-tight">
+                <div class="text-xs font-bold text-white">MÊS <span id="ui-month">1</span> • DIA <span id="ui-day">1</span> <span class="text-cyan-400">(<span id="ui-hour">08:00</span>)</span></div>
+                <div class="text-[10px] text-slate-400">Folha: Dia 30 (1x = 8s/dia)</div>
+            </div>
+
+            <div class="flex items-center bg-slate-900 p-1 rounded-lg border border-slate-800 gap-1">
+                <button id="btn-pause" onclick="setSpeed(0)" class="px-2.5 py-1 rounded text-xs font-bold bg-amber-600 text-white hover:bg-amber-500 transition flex items-center gap-1">
+                    ⏸️ PAUSAR
+                </button>
+                <button id="btn-speed-1" onclick="setSpeed(1)" class="px-2 py-1 rounded text-xs font-bold bg-emerald-600 text-white hover:bg-emerald-500 transition mono" title="1 dia a cada 8 segundos">
+                    1x
+                </button>
+                <button id="btn-speed-2" onclick="setSpeed(2)" class="px-2 py-1 rounded text-xs font-bold bg-slate-800 text-slate-400 hover:bg-slate-700 transition mono" title="1 dia a cada 4 segundos">
+                    2x
+                </button>
+                <button id="btn-speed-3" onclick="setSpeed(3)" class="px-2 py-1 rounded text-xs font-bold bg-slate-800 text-slate-400 hover:bg-slate-700 transition mono" title="1 dia a cada 2 segundos">
+                    3x
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- BANNER FLUTUANTE DE JOGO PAUSADO -->
+    <div id="pause-banner" class="hidden fixed top-16 left-1/2 -translate-x-1/2 z-30 bg-amber-500/95 text-slate-950 font-extrabold text-xs px-4 py-1.5 rounded-full shadow-xl border border-amber-300 flex items-center gap-2 tracking-wider">
+        <span>⏸️ SIMULAÇÃO PAUSADA — GERENCIE SUA OLT, SEDE, ESTOQUE E ROTAS SEM PRESSA</span>
+        <button onclick="setSpeed(1)" class="underline ml-2 font-black">▶️ Retomar (1x)</button>
+    </div>
+
+    <!-- WORKSPACE PRINCIPAL (3 COLUNAS BENTO HUD) -->
+    <main class="flex-1 grid grid-cols-12 gap-2.5 p-2.5 overflow-hidden">
+
+        <!-- COLUNA ESQUERDA (3 cols): Finanças, Estoque Completo & Telemetria NOC -->
+        <div class="col-span-3 flex flex-col gap-2.5 overflow-hidden">
+            
+            <!-- CARD 1: Finanças, Capacidade OLT/CTO e Almoxarifado -->
+            <div class="hud-card rounded-lg p-3 flex-1 flex flex-col justify-between overflow-y-auto">
+                <div>
+                    <div class="flex justify-between items-center border-b border-slate-800 pb-1.5 mb-2">
+                        <span class="text-[11px] font-bold uppercase tracking-wider text-cyan-400">📊 Caixa & Capacidade</span>
+                        <span id="ui-reputation-badge" class="text-[11px] font-bold px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">⭐ Rep: 94%</span>
+                    </div>
+
+                    <!-- Resumo Financeiro e de Portas -->
+                    <div class="space-y-1 text-xs mb-2.5 bg-slate-950/70 p-2 rounded border border-slate-800/80">
+                        <div class="flex justify-between items-center">
+                            <span class="text-slate-400">Saldo em Caixa:</span>
+                            <span id="ui-money" class="mono font-extrabold text-base text-emerald-400">R$ 3.500</span>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-slate-400">Receita Líquida:</span>
+                            <span id="ui-daily-rev" class="mono font-semibold text-emerald-300">+R$ 264/dia</span>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-slate-400">Custos Fixos (Dia 30):</span>
+                            <span id="ui-monthly-cost" class="mono text-red-400">-R$ 1.350/mês</span>
+                        </div>
+                        <div class="flex justify-between items-center pt-1 border-t border-slate-800/80">
+                            <span class="text-slate-400">Capacidade OLT:</span>
+                            <span class="mono font-bold text-cyan-300"><span id="ui-clients">12</span> / <span id="ui-olt-cap">64</span> (<span id="ui-olt-per-pon">64/PON</span>)</span>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-slate-400">Vagas nas CTOs (Rua):</span>
+                            <span class="mono font-bold text-white"><span id="ui-clients-cto">12</span> / <span id="ui-cto-cap">32</span> portas</span>
+                        </div>
+                    </div>
+
+                    <!-- Inventário Físico (5 itens + Barra de Contêiner Asiático) -->
+                    <div class="mb-2">
+                        <div class="text-[10px] font-bold text-slate-400 uppercase mb-1 flex justify-between items-center">
+                            <span>📦 Estoque no Almoxarifado</span>
+                            <span id="ui-delivery-timer" class="text-amber-400 mono hidden">🚢 Contêiner: 5d</span>
+                        </div>
+                        <!-- Barra de Progresso do Contêiner Asiático -->
+                        <div id="ui-container-progress-wrap" class="hidden mb-1.5 bg-slate-950 p-1.5 rounded border border-amber-500/40">
+                            <div class="flex justify-between text-[10px] text-amber-300 mb-0.5">
+                                <span id="ui-container-label">🚢 Navio Shenzhen ➔ Santarém</span>
+                                <span id="ui-container-days" class="mono font-bold">5 dias</span>
+                            </div>
+                            <div class="w-full bg-slate-900 h-1.5 rounded overflow-hidden">
+                                <div id="ui-container-bar" class="bg-amber-400 h-full transition-all duration-300" style="width: 20%"></div>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-5 gap-1 text-center">
+                            <div class="bg-slate-950 p-1 rounded border border-slate-800" title="Terminais Ópticos do Cliente">
+                                <div class="text-[9px] text-slate-400">ONUs</div>
+                                <div id="ui-stock-onu" class="mono font-bold text-xs text-white">8</div>
+                            </div>
+                            <div class="bg-slate-950 p-1 rounded border border-slate-800" title="Caixas de Atendimento Óptico (16 portas cada)">
+                                <div class="text-[9px] text-slate-400">CTOs</div>
+                                <div id="ui-stock-cto" class="mono font-bold text-xs text-cyan-300">2</div>
+                            </div>
+                            <div class="bg-slate-950 p-1 rounded border border-slate-800" title="Bobinas de Fibra Drop/Troncal">
+                                <div class="text-[9px] text-slate-400">Fibra</div>
+                                <div id="ui-stock-fiber" class="mono font-bold text-xs text-white">4</div>
+                            </div>
+                            <div class="bg-slate-950 p-1 rounded border border-slate-800" title="Peças para Motor de Popa da Lancha">
+                                <div class="text-[9px] text-slate-400">Popa</div>
+                                <div id="ui-stock-parts" class="mono font-bold text-xs text-white">2</div>
+                            </div>
+                            <div class="bg-slate-950 p-1 rounded border border-slate-800" title="Combustível do Gerador">
+                                <div class="text-[9px] text-slate-400">Diesel</div>
+                                <div id="ui-stock-diesel" class="mono font-bold text-xs text-amber-400">90L</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Compra Expressa Nacional -->
+                <div class="space-y-1 pt-1.5 border-t border-slate-800">
+                    <div class="flex justify-between items-center">
+                        <span class="text-[10px] text-slate-400 uppercase font-semibold">Compra Expressa (Imediata):</span>
+                        <button onclick="switchTab('hq')" class="text-[10px] text-cyan-400 hover:underline font-semibold">🚢 Ver Lotes Asiáticos (-50%)</button>
+                    </div>
+                    <div class="grid grid-cols-2 gap-1">
+                        <button onclick="buyStock('onu', 2, 260)" class="px-2 py-1 bg-slate-900 hover:bg-slate-800 border border-slate-700 rounded text-[11px] text-slate-200 transition flex justify-between">
+                            <span>+2 ONUs</span><span class="mono text-cyan-400 font-bold">R$260</span>
+                        </button>
+                        <button onclick="buyStock('cto', 1, 220)" class="px-2 py-1 bg-slate-900 hover:bg-slate-800 border border-slate-700 rounded text-[11px] text-slate-200 transition flex justify-between">
+                            <span>+1 CTO (16p)</span><span class="mono text-cyan-400 font-bold">R$220</span>
+                        </button>
+                        <button onclick="buyStock('fiber', 1, 180)" class="px-2 py-1 bg-slate-900 hover:bg-slate-800 border border-slate-700 rounded text-[11px] text-slate-200 transition flex justify-between">
+                            <span>+1 Fibra</span><span class="mono text-cyan-400 font-bold">R$180</span>
+                        </button>
+                        <button onclick="buyStock('parts', 1, 160)" class="px-2 py-1 bg-slate-900 hover:bg-slate-800 border border-slate-700 rounded text-[11px] text-slate-200 transition flex justify-between">
+                            <span>+1 Kit Popa</span><span class="mono text-cyan-400 font-bold">R$160</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- CARD 2: Telemetria do NOC (Energia, Gerador, Temperatura e Link) -->
+            <div class="hud-card rounded-lg p-3 flex flex-col justify-between shrink-0">
+                <div>
+                    <div class="flex justify-between items-center border-b border-slate-800 pb-1.5 mb-2">
+                        <span class="text-[11px] font-bold uppercase tracking-wider text-emerald-400">⚡ Telemetria do NOC</span>
+                        <div class="flex items-center gap-2">
+                            <span id="ui-temp-badge" class="mono text-[11px] font-bold text-cyan-300">🌡️ 23°C</span>
+                            <span id="ui-ping-badge" class="mono text-[11px] font-bold text-emerald-400">11 ms</span>
+                        </div>
+                    </div>
+
+                    <!-- Energia Nobreak + Chave do Gerador -->
+                    <div class="mb-2">
+                        <div class="flex justify-between text-[11px] mb-1">
+                            <span class="text-slate-300">Bateria Nobreak:</span>
+                            <span id="ui-power-text" class="mono font-bold text-lime-400">100% (Rede AC)</span>
+                        </div>
+                        <div class="w-full bg-slate-900 h-2 rounded overflow-hidden border border-slate-800">
+                            <div id="ui-power-bar" class="bg-lime-500 h-full transition-all duration-300" style="width: 100%"></div>
+                        </div>
+                    </div>
+
+                    <!-- Link Dedicado / Banda -->
+                    <div class="mb-2.5">
+                        <div class="flex justify-between text-[11px] mb-1">
+                            <span class="text-slate-300">Tráfego Link BGP:</span>
+                            <span id="ui-traffic-text" class="mono font-bold text-emerald-400">300 / 1000 Mbps</span>
+                        </div>
+                        <div class="w-full bg-slate-900 h-2 rounded overflow-hidden border border-slate-800">
+                            <div id="ui-traffic-bar" class="bg-emerald-500 h-full transition-all duration-300" style="width: 30%"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Botões de Infraestrutura Rápida -->
+                <div class="grid grid-cols-2 gap-1.5 pt-1.5 border-t border-slate-800">
+                    <button id="btn-gen-toggle" onclick="toggleGenerator()" class="px-2 py-1.5 bg-slate-900 hover:bg-slate-800 border border-slate-700 rounded text-[11px] text-slate-300 font-medium transition truncate">
+                        ⚙️ Gerador: AUTO
+                    </button>
+                    <button onclick="upgradeLink()" class="px-2 py-1.5 bg-emerald-950/60 hover:bg-emerald-900/70 border border-emerald-500/40 rounded text-[11px] text-emerald-300 font-semibold transition truncate">
+                        +1 Gbps Link (R$750)
+                    </button>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- COLUNA CENTRAL (6 cols): VIEWPORT INTERATIVA COM 5 ABAS -->
+        <div class="col-span-6 hud-card rounded-lg flex flex-col overflow-hidden relative">
+
+            <!-- ========================================================= -->
+            <!-- ABA 1: PLANTA ISOMÉTRICA DA SEDE + CENTRAL DE SUPRIMENTOS -->
+            <!-- ========================================================= -->
+            <div id="tab-hq" class="flex-1 flex flex-col p-3.5 overflow-y-auto">
+                <div class="flex justify-between items-center mb-2">
+                    <div>
+                        <h2 class="text-sm font-bold text-white uppercase tracking-wide flex items-center gap-2">
+                            <span>🏢 Planta Tática da Sede & Cadeia de Suprimentos</span>
+                            <span class="text-[10px] bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 px-2 py-0.5 rounded mono">HUD ISOMÉTRICO</span>
+                        </h2>
+                        <p class="text-[11px] text-slate-400">Gerencie a refrigeração do NOC, baias de atendimento, doca de importação asiática e frota fluvial.</p>
+                    </div>
+                    <button onclick="buyStock('diesel', 50, 120)" class="px-2.5 py-1 bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/40 text-amber-300 text-[11px] font-bold rounded transition">
+                        ⛽ +50L Diesel (R$ 120)
+                    </button>
+                </div>
+
+                <!-- Grid 2x2 da Planta da Sede -->
+                <div class="grid grid-cols-2 gap-2.5 mb-2.5">
+                    
+                    <!-- SALA 1: NOC & SALA DE SERVIDORES -->
+                    <div class="iso-room rounded-xl border border-cyan-500/40 p-2.5 flex flex-col justify-between relative overflow-hidden">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <span class="text-[9px] font-bold uppercase tracking-wider text-cyan-400 block">SETOR 01 • CLIMATIZAÇÃO & CORE</span>
+                                <h3 class="text-xs font-bold text-white flex items-center gap-1.5">
+                                    <span>🖥️ NOC & Bastidor OLT</span>
+                                    <span class="w-2 h-2 rounded-full led-green"></span>
+                                </h3>
+                            </div>
+                            <span id="hq-noc-level" class="text-[10px] mono font-bold bg-slate-900 border border-slate-700 px-1.5 py-0.5 rounded text-cyan-300">Ar-Cond. Nv.1</span>
+                        </div>
+
+                        <div class="my-2 bg-slate-950/90 border border-slate-800/90 rounded-lg p-2 grid grid-cols-3 gap-1.5 text-center items-center">
+                            <div onclick="switchTab('noc')" class="cursor-pointer bg-slate-900/90 hover:bg-slate-800 p-1.5 rounded border border-slate-700 transition">
+                                <div class="text-lg float-anim">🗄️</div>
+                                <div class="text-[10px] font-bold text-white">Rack 42U</div>
+                                <div id="hq-rack-slots" class="text-[9px] text-emerald-400 mono">1/4 PON (64p)</div>
+                            </div>
+                            <div class="bg-slate-900/90 p-1.5 rounded border border-slate-800">
+                                <div class="text-lg">❄️</div>
+                                <div class="text-[10px] font-bold text-white">Split Inverter</div>
+                                <div id="hq-ac-temp" class="text-[9px] text-cyan-300 mono">Temp: 23°C</div>
+                            </div>
+                            <div class="bg-slate-900/90 p-1.5 rounded border border-slate-800">
+                                <div class="text-lg">🔋</div>
+                                <div class="text-[10px] font-bold text-white">Gerador</div>
+                                <div id="hq-gen-fuel" class="text-[9px] text-amber-400 mono">Diesel: 90L</div>
+                            </div>
+                        </div>
+
+                        <div class="flex items-center justify-between gap-2 pt-1 border-t border-slate-800/80">
+                            <span class="text-[10px] text-slate-400">Resfria OLTs de alta densidade.</span>
+                            <button onclick="upgradeAcUnit()" class="px-2 py-1 bg-cyan-600 hover:bg-cyan-500 text-white text-[10px] font-bold rounded transition shrink-0">
+                                ❄️ +Ar-Cond. (R$ 650)
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- SALA 2: CALL CENTER & ATENDIMENTO -->
+                    <div class="iso-room rounded-xl border border-purple-500/40 p-2.5 flex flex-col justify-between relative overflow-hidden">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <span class="text-[9px] font-bold uppercase tracking-wider text-purple-400 block">SETOR 02 • SUPORTE TR-069</span>
+                                <h3 class="text-xs font-bold text-white">🎧 Call Center & Retenção</h3>
+                            </div>
+                            <span id="hq-cc-desks" class="text-[10px] mono font-bold bg-slate-900 border border-slate-700 px-1.5 py-0.5 rounded text-purple-300">1/3 Baias</span>
+                        </div>
+
+                        <div class="my-2 bg-slate-950/90 border border-slate-800/90 rounded-lg p-2 grid grid-cols-3 gap-1.5 text-center items-center">
+                            <div onclick="switchTab('callcenter')" class="cursor-pointer bg-slate-900/90 hover:bg-slate-800 p-1.5 rounded border border-purple-500/30 transition">
+                                <div class="text-lg staff-avatar">👩‍💻</div>
+                                <div class="text-[10px] font-bold text-white">Operadores</div>
+                                <div id="hq-cc-agents" class="text-[9px] text-purple-300 mono">1 Atendente</div>
+                            </div>
+                            <div onclick="switchTab('callcenter')" class="cursor-pointer bg-slate-900/90 hover:bg-slate-800 p-1.5 rounded border border-slate-800 transition">
+                                <div class="text-lg">🎫</div>
+                                <div class="text-[10px] font-bold text-white">Fila Tickets</div>
+                                <div id="hq-cc-tickets" class="text-[9px] text-amber-400 mono">1 Aberto</div>
+                            </div>
+                            <div class="bg-slate-900/90 p-1.5 rounded border border-slate-800">
+                                <div class="text-lg">☕</div>
+                                <div class="text-[10px] font-bold text-white">Café Expresso</div>
+                                <div id="hq-cc-coffee" class="text-[9px] text-emerald-400 mono">Moral Alta</div>
+                            </div>
+                        </div>
+
+                        <div class="flex items-center justify-between gap-2 pt-1 border-t border-slate-800/80">
+                            <span class="text-[10px] text-slate-400">Resolve tickets automaticamente.</span>
+                            <button onclick="upgradeCallCenterRoom()" class="px-2 py-1 bg-purple-600 hover:bg-purple-500 text-white text-[10px] font-bold rounded transition shrink-0">
+                                🎧 +Baia Suporte (R$ 550)
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- SALA 3: ALMOXARIFADO & DOCA -->
+                    <div class="iso-room rounded-xl border border-amber-500/40 p-2.5 flex flex-col justify-between relative overflow-hidden">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <span class="text-[9px] font-bold uppercase tracking-wider text-amber-400 block">SETOR 03 • HARDWARE FTTH</span>
+                                <h3 class="text-xs font-bold text-white">📦 Almoxarifado & Doca</h3>
+                            </div>
+                            <span id="hq-wh-status" class="text-[10px] mono font-bold bg-slate-900 border border-slate-700 px-1.5 py-0.5 rounded text-amber-300">Estoque Ativo</span>
+                        </div>
+
+                        <div class="my-2 bg-slate-950/90 border border-slate-800/90 rounded-lg p-2 grid grid-cols-3 gap-1.5 text-center items-center">
+                            <div class="bg-slate-900/90 p-1.5 rounded border border-slate-800">
+                                <div class="text-lg">📠</div>
+                                <div class="text-[10px] font-bold text-white">ONUs & CTOs</div>
+                                <div id="hq-wh-onu" class="text-[9px] text-emerald-400 mono">8 ONU | 2 CTO</div>
+                            </div>
+                            <div class="bg-slate-900/90 p-1.5 rounded border border-slate-800">
+                                <div class="text-lg">🧶</div>
+                                <div class="text-[10px] font-bold text-white">Bobinas Fibra</div>
+                                <div id="hq-wh-fiber" class="text-[9px] text-cyan-300 mono">4 Bobinas</div>
+                            </div>
+                            <div class="bg-slate-900/90 p-1.5 rounded border border-slate-800">
+                                <div class="text-lg">🚢</div>
+                                <div class="text-[10px] font-bold text-white">Contêiner</div>
+                                <div id="hq-wh-ship" class="text-[9px] text-slate-400 mono">Doca Livre</div>
+                            </div>
+                        </div>
+
+                        <div class="flex items-center justify-between gap-2 pt-1 border-t border-slate-800/80">
+                            <span class="text-[10px] text-slate-400">Compre CTOs p/ ampliar vagas na rua.</span>
+                            <button onclick="buyStock('cto', 2, 400)" class="px-2 py-1 bg-amber-500 hover:bg-amber-400 text-slate-950 text-[10px] font-bold rounded transition shrink-0">
+                                📡 +2 CTOs 16p (R$ 400)
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- SALA 4: GARAGEM & PÍER FLUVIAL -->
+                    <div class="iso-room rounded-xl border border-emerald-500/40 p-2.5 flex flex-col justify-between relative overflow-hidden">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <span class="text-[9px] font-bold uppercase tracking-wider text-emerald-400 block">SETOR 04 • FROTA & NAVEGAÇÃO</span>
+                                <h3 class="text-xs font-bold text-white">🚤 Garagem & Píer Fluvial</h3>
+                            </div>
+                            <span id="hq-fleet-status" class="text-[10px] mono font-bold bg-slate-900 border border-slate-700 px-1.5 py-0.5 rounded text-emerald-400">Frota Pronta</span>
+                        </div>
+
+                        <div class="my-2 bg-slate-950/90 border border-slate-800/90 rounded-lg p-2 grid grid-cols-3 gap-1.5 text-center items-center">
+                            <div class="bg-slate-900/90 p-1.5 rounded border border-slate-800">
+                                <div class="text-lg">🛻</div>
+                                <div class="text-[10px] font-bold text-white">Picape Escada</div>
+                                <div id="hq-truck-cond" class="text-[9px] text-emerald-400 mono">100% Pronta</div>
+                            </div>
+                            <div class="bg-slate-900/90 p-1.5 rounded border border-slate-800">
+                                <div class="text-lg float-anim">🚤</div>
+                                <div class="text-[10px] font-bold text-white">Lancha Popa</div>
+                                <div id="hq-boat-cond" class="text-[9px] text-cyan-300 mono">Motor: 100%</div>
+                            </div>
+                            <div onclick="switchTab('map')" class="cursor-pointer bg-slate-900/90 hover:bg-slate-800 p-1.5 rounded border border-slate-800 transition">
+                                <div class="text-lg staff-avatar">👷</div>
+                                <div class="text-[10px] font-bold text-white">Técnicos</div>
+                                <div id="hq-field-techs" class="text-[9px] text-white mono">1 em Campo</div>
+                            </div>
+                        </div>
+
+                        <div class="flex items-center justify-between gap-2 pt-1 border-t border-slate-800/80">
+                            <span class="text-[10px] text-slate-400">Revisão preventiva p/ cruzar o rio.</span>
+                            <button onclick="maintainBoat()" class="px-2 py-1 bg-emerald-600 hover:bg-emerald-500 text-white text-[10px] font-bold rounded transition shrink-0">
+                                🔧 Revisar Popa (1 Peça)
+                            </button>
+                        </div>
+                    </div>
+
+                </div>
+
+                <!-- COMPARATIVO DE LOGÍSTICA: MERCADO NACIONAL EXPRESSO vs IMPORTAÇÃO ASIÁTICA (-50%) -->
+                <div class="bg-slate-950/90 border border-slate-800 rounded-xl p-3 flex-1 flex flex-col justify-between">
+                    <div class="flex justify-between items-center border-b border-slate-800 pb-1.5 mb-2">
+                        <div>
+                            <span class="text-xs font-bold text-amber-400 uppercase">🚢 Central de Compras: Distribuidor Nacional vs Importação Asiática (Shenzhen)</span>
+                        </div>
+                        <span class="text-[10px] mono text-slate-400">Importação economiza ~50% (Prazo: 5 dias)</span>
+                    </div>
+
+                    <div class="grid grid-cols-3 gap-2">
+                        <div class="bg-slate-900 border border-slate-800 rounded-lg p-2 flex flex-col justify-between">
+                            <div>
+                                <div class="text-xs font-bold text-white">🚢 Contêiner Asiático #1</div>
+                                <div class="text-[10px] text-emerald-400 font-semibold">+12 ONUs Wi-Fi 6 + 3 CTOs</div>
+                                <div class="text-[10px] text-slate-400">Chega em 5 dias na Doca</div>
+                            </div>
+                            <button onclick="orderAsianContainer(12, 3, 0, 1100)" class="mt-2 w-full py-1 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-[11px] rounded transition">
+                                Importar Lote (R$ 1.100)
+                            </button>
+                        </div>
+
+                        <div class="bg-slate-900 border border-slate-800 rounded-lg p-2 flex flex-col justify-between">
+                            <div>
+                                <div class="text-xs font-bold text-white">🚢 Contêiner Asiático #2</div>
+                                <div class="text-[10px] text-cyan-400 font-semibold">+6 Bobinas Fibra + 4 CTOs</div>
+                                <div class="text-[10px] text-slate-400">Ideal p/ Expansão de Bairros</div>
+                            </div>
+                            <button onclick="orderAsianContainer(0, 4, 6, 950)" class="mt-2 w-full py-1 bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-[11px] rounded transition">
+                                Importar Fibra (R$ 950)
+                            </button>
+                        </div>
+
+                        <div class="bg-slate-900 border border-slate-800 rounded-lg p-2 flex flex-col justify-between">
+                            <div>
+                                <div class="text-xs font-bold text-white">⚡ Kit Nacional Expresso</div>
+                                <div class="text-[10px] text-purple-300 font-semibold">+5 ONUs + 1 CTO + 1 Fibra</div>
+                                <div class="text-[10px] text-slate-400">Entrega Imediata no Estoque</div>
+                            </div>
+                            <button onclick="buyExpressKit()" class="mt-2 w-full py-1 bg-purple-600 hover:bg-purple-500 text-white font-bold text-[11px] rounded transition">
+                                Receber Agora (R$ 920)
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ========================================================= -->
+            <!-- ABA 2: RACK OLT 42U & UPGRADE DE ARQUITETURA (64/128/256) -->
+            <!-- ========================================================= -->
+            <div id="tab-noc" class="hidden flex-1 flex flex-col p-3.5 overflow-y-auto">
+                <div class="flex justify-between items-center mb-2.5">
+                    <div>
+                        <h2 class="text-sm font-bold text-white uppercase tracking-wide flex items-center gap-2">
+                            <span>🖥️ Bastidor Telecom 42U — OLT GPON / XGS-PON</span>
+                            <span id="noc-arch-badge" class="text-[11px] px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 mono font-bold">Padrão 1:64 (64 Clientes/PON)</span>
+                        </h2>
+                        <p class="text-[11px] text-slate-400">Comece com 64 clientes por porta PON e evolua os splitters para 1:128 ou migre o chassis para XGS-PON 10G (256 clientes/PON).</p>
+                    </div>
+                    <button onclick="buyPonCard()" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded shadow transition shrink-0">
+                        + Instalar Placa PON (<span id="btn-pon-cap-label">+64 Vagas</span>) — R$ 1.100
+                    </button>
+                </div>
+
+                <!-- BARRA DE EVOLUÇÃO DA ARQUITETURA OLT (64 -> 128 -> 256) -->
+                <div class="grid grid-cols-3 gap-2 mb-3 bg-slate-950 border border-slate-800 rounded-lg p-2.5">
+                    <div id="arch-card-64" class="p-2 rounded border border-emerald-500/60 bg-emerald-950/20 flex flex-col justify-between">
+                        <div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-xs font-bold text-emerald-400">1. GPON Splitter 1:64</span>
+                                <span class="text-[10px] mono bg-emerald-500/20 text-emerald-300 px-1.5 rounded">ATIVO</span>
+                            </div>
+                            <p class="text-[10px] text-slate-400 mt-0.5">64 clientes por placa PON (Máx 256 no rack).</p>
+                        </div>
+                        <div class="text-[10px] font-bold text-emerald-400 mt-1">✅ Configuração Inicial</div>
+                    </div>
+
+                    <div id="arch-card-128" class="p-2 rounded border border-slate-800 bg-slate-900/80 flex flex-col justify-between">
+                        <div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-xs font-bold text-cyan-400">2. GPON High-Density 1:128</span>
+                                <span class="text-[10px] mono text-slate-400">128/PON</span>
+                            </div>
+                            <p class="text-[10px] text-slate-400 mt-0.5">Dobra cada porta PON ativa para <strong>128 clientes</strong> (Máx 512).</p>
+                        </div>
+                        <button id="btn-upg-128" onclick="upgradeOltArchitecture(128)" class="mt-1.5 w-full py-1 bg-cyan-600 hover:bg-cyan-500 text-white text-[11px] font-bold rounded transition">
+                            Upgrade 1:128 (R$ 1.800)
+                        </button>
+                    </div>
+
+                    <div id="arch-card-256" class="p-2 rounded border border-slate-800 bg-slate-900/80 flex flex-col justify-between">
+                        <div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-xs font-bold text-amber-400">3. Chassis XGS-PON 10G</span>
+                                <span class="text-[10px] mono text-amber-300">256/PON</span>
+                            </div>
+                            <p class="text-[10px] text-slate-400 mt-0.5"><strong>256 clientes/PON</strong> (Máx 1.024) + Bônus de +R$ 6/dia por cliente!</p>
+                        </div>
+                        <button id="btn-upg-256" onclick="upgradeOltArchitecture(256)" class="mt-1.5 w-full py-1 bg-amber-500 hover:bg-amber-400 text-slate-950 text-[11px] font-bold rounded transition">
+                            Migrar XGS-PON (R$ 3.600)
+                        </button>
+                    </div>
+                </div>
+
+                <div class="flex-1 grid grid-cols-12 gap-3 bg-slate-950/90 border border-slate-800 rounded-lg p-3">
+                    
+                    <!-- Rack 19 Polegadas (7 cols) -->
+                    <div class="col-span-7 border-4 border-slate-700 rounded-lg bg-slate-900 p-2.5 flex flex-col justify-between shadow-inner">
+                        <div class="text-center text-[10px] mono text-slate-400 border-b border-slate-800 pb-1 flex justify-between px-2">
+                            <span>BASTIDOR 19" • HUAWEI / DATACOM</span>
+                            <span id="olt-chassis-temp" class="text-cyan-400 font-bold">🌡️ CHASSIS: 23°C</span>
+                        </div>
+
+                        <!-- 1U: Roteador de Borda BGP -->
+                        <div class="rack-unit p-2 rounded flex items-center justify-between">
+                            <div>
+                                <div class="text-[11px] font-bold text-cyan-400 mono">CCR-2216 CORE BGP ROUTER</div>
+                                <div class="text-[10px] text-slate-400">ASN 269120 • IX.br / PTT Ativo</div>
+                            </div>
+                            <div class="flex items-center gap-1.5">
+                                <span class="w-2.5 h-2.5 rounded-full led-cyan"></span>
+                                <span class="w-2.5 h-2.5 rounded-full led-green"></span>
+                                <span class="text-[10px] mono bg-slate-950 px-1.5 py-0.5 rounded text-emerald-400 border border-emerald-500/30">QSFP28 100G</span>
+                            </div>
+                        </div>
+
+                        <!-- 4U: Chassis OLT GPON / XGS-PON -->
+                        <div class="rack-unit p-2.5 rounded flex-1 my-1.5 flex flex-col justify-between">
+                            <div class="flex justify-between items-center border-b border-slate-800 pb-1">
+                                <span id="rack-olt-title" class="text-xs font-bold text-white mono">OLT GPON MA5800 (64 CLIENTES / PON)</span>
+                                <span class="text-[10px] mono text-emerald-400" id="rack-total-cap-badge">Cap: 64</span>
+                            </div>
+
+                            <!-- Slots PON -->
+                            <div id="olt-slots-container" class="space-y-1.5 my-1">
+                                <!-- Preenchido via JS -->
+                            </div>
+
+                            <div class="text-[10px] text-slate-400 flex justify-between">
+                                <span>🟢 Normal | 🟠 Atenuação | 🔴 LOS</span>
+                                <span>Clique no slot p/ Check Port</span>
+                            </div>
+                        </div>
+
+                        <!-- 2U: Retificadora e Banco de Baterias -->
+                        <div class="rack-unit p-2 rounded flex items-center justify-between">
+                            <div>
+                                <div class="text-[11px] font-bold text-lime-400 mono">RETIFICADORA -48VDC + LÍTIO</div>
+                                <div id="rack-power-status" class="text-[10px] text-slate-400">Rede Elétrica Concessionária Estável</div>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <span id="rack-power-led" class="w-3 h-3 rounded-full led-green"></span>
+                                <span id="rack-battery-pct" class="mono text-xs font-bold text-lime-400">100%</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Inspetor Óptico e Diagnóstico de Porta (5 cols) -->
+                    <div class="col-span-5 flex flex-col justify-between gap-2.5">
+                        <div class="bg-slate-900 border border-slate-800 rounded-lg p-3 flex-1 flex flex-col justify-between">
+                            <div>
+                                <div class="text-xs font-bold text-slate-200 border-b border-slate-800 pb-1.5 mb-2 flex justify-between items-center">
+                                    <span>🔍 Optical Power Meter</span>
+                                    <span id="insp-slot-id" class="mono text-cyan-400 bg-cyan-950/60 px-2 py-0.5 rounded border border-cyan-500/30">SLOT #1</span>
+                                </div>
+                                <div class="space-y-1.5 text-xs">
+                                    <div class="flex justify-between"><span class="text-slate-400">Status Laser:</span><span id="insp-status" class="font-bold text-emerald-400">ONLINE</span></div>
+                                    <div class="flex justify-between"><span class="text-slate-400">Sinal Óptico RX:</span><span id="insp-dbm" class="mono text-white">-18.9 dBm (Ideal)</span></div>
+                                    <div class="flex justify-between"><span class="text-slate-400">Clientes na PON:</span><span id="insp-onus" class="mono text-cyan-300 font-bold">12 / 64 ONUs</span></div>
+                                    <div class="flex justify-between"><span class="text-slate-400">Divisor Óptico:</span><span id="insp-splitter" class="mono text-slate-300">Splitter 1:64</span></div>
+                                    <div class="flex justify-between"><span class="text-slate-400">Perda de Pacotes:</span><span id="insp-loss" class="mono text-emerald-400">0.0% (Limpo)</span></div>
+                                </div>
+                            </div>
+
+                            <div class="space-y-1.5 pt-2 border-t border-slate-800">
+                                <button onclick="runCheckPortDiagnostic()" class="w-full py-2 bg-cyan-600 hover:bg-cyan-500 text-white rounded text-xs font-bold transition shadow">
+                                    🩺 Check Port & Limpar Atenuação
+                                </button>
+                                <button onclick="resetPonPort()" class="w-full py-1.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded text-[11px] font-semibold text-slate-300 transition">
+                                    🔄 Reiniciar Laser da Porta PON
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- ========================================================= -->
+            <!-- ABA 3: MAPA TÁTICO & GESTÃO DE CTOs (5 ZONAS + RIO/SELVA) -->
+            <!-- ========================================================= -->
+            <div id="tab-map" class="hidden flex-1 flex flex-col p-3.5 overflow-y-auto">
+                <div class="flex justify-between items-center mb-2">
+                    <div>
+                        <h2 class="text-sm font-bold text-white uppercase tracking-wide">🗺️ Topologia FTTH, CTOs & Travessia Fluvial</h2>
+                        <p class="text-[11px] text-slate-400">Cada CTO instalada no poste libera <strong>+16 vagas de clientes</strong> no bairro. Expanda para a Ilha Ribeirinha e Comunidade da Floresta.</p>
+                    </div>
+                    <div class="flex gap-1.5">
+                        <button onclick="maintainBoat()" class="px-2.5 py-1 bg-cyan-950 hover:bg-cyan-900 border border-cyan-500/40 rounded text-xs text-cyan-300 font-semibold transition">
+                            🚤 Revisar Lancha (<span id="map-boat-pct">100%</span>)
+                        </button>
+                    </div>
+                </div>
+
+                <div class="flex-1 bg-slate-950 border border-slate-800 rounded-lg relative overflow-hidden flex flex-col justify-between p-2.5">
+                    
+                    <!-- Mapa Vetorial Interativo com 5 Zonas -->
+                    <svg class="w-full h-44 bg-[#060d18] rounded border border-slate-800/90 mb-2 shrink-0" viewBox="0 0 640 200">
+                        <defs>
+                            <pattern id="mapGrid" width="30" height="30" patternUnits="userSpaceOnUse">
+                                <path d="M 30 0 L 0 0 0 30" fill="none" stroke="rgba(56, 189, 248, 0.05)" stroke-width="1"/>
+                            </pattern>
+                        </defs>
+                        <rect width="640" height="200" fill="url(#mapGrid)" />
+
+                        <!-- Rio Tapajós / Canal Fluvial -->
+                        <path d="M 365,0 Q 400,100 345,200 L 440,200 Q 480,100 450,0 Z" fill="#082f49" opacity="0.88" />
+                        <text x="400" y="108" fill="#38bdf8" font-size="8.5" font-weight="bold" opacity="0.7" transform="rotate(-78 400,108)">RIO TAPAJÓS • CABO SUBFLUVIAL</text>
+
+                        <!-- Rotas de Fibra Óptica -->
+                        <line id="svg-line-1" x1="80" y1="100" x2="205" y2="45" stroke="#22c55e" stroke-width="3.5" class="fiber-line-active" />
+                        <line id="svg-line-2" x1="80" y1="100" x2="205" y2="155" stroke="#22c55e" stroke-width="3.5" class="fiber-line-active" />
+                        <line id="svg-line-3" x1="205" y1="45" x2="310" y2="100" stroke="#334155" stroke-width="3.5" />
+                        <line id="svg-line-4" x1="310" y1="100" x2="500" y2="55" stroke="#334155" stroke-width="3.5" stroke-dasharray="4,4" />
+                        <line id="svg-line-5" x1="500" y1="55" x2="575" y2="145" stroke="#334155" stroke-width="3.5" stroke-dasharray="4,4" />
+
+                        <!-- Base Central NOC -->
+                        <g transform="translate(80,100)" onclick="switchTab('hq')" class="cursor-pointer">
+                            <circle r="20" fill="#0f172a" stroke="#06b6d4" stroke-width="3" />
+                            <text x="0" y="3" text-anchor="middle" fill="#fff" font-size="9" font-weight="bold">SEDE</text>
+                            <text x="0" y="31" text-anchor="middle" fill="#38bdf8" font-size="8.5" font-weight="bold">NOC OLT</text>
+                        </g>
+
+                        <!-- Zona 0: Centro Comercial -->
+                        <g transform="translate(205,45)" class="cursor-pointer" onclick="selectMapZone(0)">
+                            <circle id="svg-node-0" r="16" fill="#1e293b" stroke="#22c55e" stroke-width="3" />
+                            <text x="0" y="3" text-anchor="middle" fill="#fff" font-size="9" font-weight="bold">Z1</text>
+                            <text x="0" y="-20" text-anchor="middle" fill="#e2e8f0" font-size="9.5" font-weight="bold">Centro Comercial</text>
+                        </g>
+
+                        <!-- Zona 1: Bairro Residencial -->
+                        <g transform="translate(205,155)" class="cursor-pointer" onclick="selectMapZone(1)">
+                            <circle id="svg-node-1" r="16" fill="#1e293b" stroke="#22c55e" stroke-width="3" />
+                            <text x="0" y="3" text-anchor="middle" fill="#fff" font-size="9" font-weight="bold">Z2</text>
+                            <text x="0" y="28" text-anchor="middle" fill="#e2e8f0" font-size="9.5" font-weight="bold">Bairro Residencial</text>
+                        </g>
+
+                        <!-- Zona 2: Distrito Industrial -->
+                        <g transform="translate(310,100)" class="cursor-pointer" onclick="selectMapZone(2)">
+                            <circle id="svg-node-2" r="16" fill="#1e293b" stroke="#475569" stroke-width="3" />
+                            <text x="0" y="3" text-anchor="middle" fill="#fff" font-size="9" font-weight="bold">Z3</text>
+                            <text x="0" y="-20" text-anchor="middle" fill="#94a3b8" font-size="9.5" font-weight="bold">Distrito Industrial</text>
+                        </g>
+
+                        <!-- Zona 3: Vila Ribeirinha (Ilha) -->
+                        <g transform="translate(500,55)" class="cursor-pointer" onclick="selectMapZone(3)">
+                            <circle id="svg-node-3" r="18" fill="#1e293b" stroke="#475569" stroke-width="3" />
+                            <text x="0" y="3" text-anchor="middle" fill="#38bdf8" font-size="9" font-weight="bold">🚤 Z4</text>
+                            <text x="0" y="-22" text-anchor="middle" fill="#38bdf8" font-size="9.5" font-weight="bold">Vila Ribeirinha</text>
+                        </g>
+
+                        <!-- Zona 4: Comunidade da Floresta -->
+                        <g transform="translate(575,145)" class="cursor-pointer" onclick="selectMapZone(4)">
+                            <circle id="svg-node-4" r="18" fill="#1e293b" stroke="#475569" stroke-width="3" />
+                            <text x="0" y="3" text-anchor="middle" fill="#4ade80" font-size="9" font-weight="bold">🌲 Z5</text>
+                            <text x="0" y="29" text-anchor="middle" fill="#4ade80" font-size="9.5" font-weight="bold">Comunidade Floresta</text>
+                        </g>
+                    </svg>
+
+                    <!-- Cards das 5 Zonas e Instalação de CTOs -->
+                    <div id="map-zones-grid" class="grid grid-cols-2 gap-1.5 overflow-y-auto pr-1">
+                        <!-- Gerado via JS -->
+                    </div>
+                </div>
+            </div>
+
+<!-- ... existing code ... -->
+                    <!-- PAINEL DIREITO SUPERIOR: Provisionamento Rápido -->
+            <div class="hud-card rounded-lg p-3 flex flex-col justify-between shrink-0">
+                <div>
+                    <div class="flex justify-between items-center border-b border-slate-800 pb-1.5 mb-2">
+                        <span class="text-[11px] font-bold uppercase tracking-wider text-emerald-400">⚡ Provisionamento OLT/CTO</span>
+                        <span id="ui-queue-badge" class="px-2 py-0.5 bg-amber-500/20 text-amber-300 border border-amber-500/30 rounded text-[11px] font-bold mono">3 na fila</span>
+                    </div>
+
+                    <div id="provisioning-list" class="space-y-1.5 mb-2.5 max-h-36 overflow-y-auto pr-1">
+                        <!-- Gerado via JS -->
+                    </div>
+                </div>
+
+                <div class="pt-2 border-t border-slate-800">
+                    <div class="grid grid-cols-3 gap-1.5 mb-1.5">
+                        <button onclick="provisionClient()" class="col-span-2 py-1.5 px-2 bg-emerald-950/90 hover:bg-emerald-800 border border-emerald-500 text-emerald-300 font-bold text-xs rounded transition shadow">
+                            [Autorizar ONU]
+                        </button>
+                        <button onclick="rejectOrder()" class="py-1.5 px-2 bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-300 font-semibold text-xs rounded transition">
+                            [Recusar]
+                        </button>
+                    </div>
+                    <button onclick="cutDefaulter()" class="w-full py-1 px-2 bg-red-950/70 hover:bg-red-900/80 border border-red-500/60 text-red-300 font-bold text-[11px] rounded transition mb-1">
+                        ✂️ Cortar Inadimplente & Recolher ONU (<span id="ui-defaulters">0</span>)
+                    </button>
+                </div>
+            </div>
+
+            <!-- PAINEL DIREITO INFERIOR: Despacho Rápido & Logs do Terminal -->
+            <div class="hud-card rounded-lg p-3 flex-1 flex flex-col justify-between overflow-hidden">
+                <div class="flex flex-col flex-1 overflow-hidden">
+                    <div class="flex justify-between items-center border-b border-slate-800 pb-1.5 mb-2">
+                        <span class="text-[11px] font-bold uppercase tracking-wider text-amber-400">🚨 Operação de Campo & Logs</span>
+                        <span id="ui-breaks-badge" class="text-[11px] font-bold text-emerald-400">Rede Íntegra</span>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-1.5 mb-2">
+                        <button onclick="dispatchFieldTech()" class="py-1.5 px-2 bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/60 text-amber-300 rounded text-[11px] font-bold transition">
+                            🔧 Reparar Fibra (R$50)
+                        </button>
+                        <button onclick="resolveSupportTickets()" class="py-1.5 px-2 bg-purple-500/20 hover:bg-purple-500/30 border border-purple-500/60 text-purple-300 rounded text-[11px] font-bold transition">
+                            🎧 Limpar Tickets (<span id="ui-support-tickets">1</span>)
+                        </button>
+                    </div>
+
+                    <div class="text-[10px] font-bold uppercase text-slate-400 mb-1 flex justify-between">
+                        <span>Terminal Syslog:</span>
+                        <span class="mono text-cyan-400">OLT-CLI v3.0</span>
+                    </div>
+                    <div id="system-logs" class="flex-1 bg-slate-950/95 border border-slate-800/90 rounded p-2 overflow-y-auto mono text-[11px] space-y-1">
+                        <!-- Logs inseridos via JS -->
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+    </main>
+
+    <!-- ========================================================= -->
+    <!-- LÓGICA COMPLETA DO SIMULADOR v3.0 (64/128/256 PON)        -->
+    <!-- ========================================================= -->
+    <script>
+        const state = {
+            mode: 'raiz',
+            speed: 0,
+            eventFrequency: 'calmo', // 'calmo', 'normal', 'intenso'
+            day: 1,
+            month: 1,
+            hour: 8,
+            money: 3500,
+            loanDebt: 0,
+            reputation: 94,
+            clients: 12,
+            peakClients: 12,
+            defaulters: 0,
+            pricingPolicy: 'padrao',
+            acLevel: 1,
+            ccDesks: 1,
+            trainingLevel: 1,
+            rackTemp: 23,
+            generatorMode: 'auto',
+
+            // Arquitetura OLT: 64 clientes/PON inicial -> 128 -> 256 (XGS-PON)
+            ponCapacityPerCard: 64,
+            oltArchName: 'GPON 1:64',
+
+            queue: [
+                { id: 101, name: "Padaria São José", plan: "300 Mega FTTH", zone: "Centro Comercial" },
+                { id: 102, name: "Residência Família Silva", plan: "300 Mega FTTH", zone: "Bairro Residencial" },
+                { id: 103, name: "Mercadinho Tapajós", plan: "500 Mega Pro", zone: "Centro Comercial" }
+            ],
+
+            ticketsList: [
+                { id: 501, client: "Lan House Cyber", issue: "Ajuste de MTU / Rota BGP para Jogos", type: "remote" }
+            ],
+
+            stock: {
+                onu: 8,
+                cto: 2,
+                fiber: 4,
+                parts: 2,
+                diesel: 90
+            },
+
+            pendingDelivery: null,
+            linkCapacityMbps: 1000,
+            powerPct: 100,
+            gridPowerOk: true,
+            weather: 'limpo',
+            nextWeather: 'limpo',
+            boatHealth: 100,
+            selectedPonSlot: 0,
+            licenseLevel: 1,
+
+            ponSlots: [
+                { id: 1, installed: true, clients: 12, capacity: 64, zoneIndex: 0, packetLoss: 0 },
+                { id: 2, installed: false, clients: 0, capacity: 64, zoneIndex: 1, packetLoss: 0 },
+                { id: 3, installed: false, clients: 0, capacity: 64, zoneIndex: 2, packetLoss: 0 },
+                { id: 4, installed: false, clients: 0, capacity: 64, zoneIndex: 3, packetLoss: 0 }
+            ],
+
+            zones: [
+                { id: 0, name: "Centro Comercial", unlocked: true, broken: false, river: false, ctosCount: 1, ctoPorts: 16, clients: 7, dbm: -18.8, reqLicense: 1, unlockCost: 0 },
+                { id: 1, name: "Bairro Residencial", unlocked: true, broken: false, river: false, ctosCount: 1, ctoPorts: 16, clients: 5, dbm: -19.4, reqLicense: 1, unlockCost: 0 },
+                { id: 2, name: "Distrito Industrial", unlocked: false, broken: false, river: false, ctosCount: 1, ctoPorts: 16, clients: 0, dbm: -20.1, reqLicense: 2, unlockCost: 1200 },
+                { id: 3, name: "Vila Ribeirinha (Ilha)", unlocked: false, broken: false, river: true, ctosCount: 1, ctoPorts: 16, clients: 0, dbm: -22.5, reqLicense: 2, unlockCost: 2000 },
+                { id: 4, name: "Comunidade Floresta", unlocked: false, broken: false, river: true, ctosCount: 2, ctoPorts: 32, clients: 0, dbm: -23.8, reqLicense: 3, unlockCost: 2900 }
+            ],
+
+            staff: [
+                { id: 1, name: "Carlos Mendes", role: "tech", salary: 550, traitPos: "Mestre da Fusão", traitNeg: "Exige Café Forte" },
+                { id: 2, name: "Juliana Costa", role: "agent", salary: 450, traitPos: "Especialista TR-069", traitNeg: "Detesta tempestade" }
+            ],
+
+            emails: [
+                {
+                    id: 1,
+                    sender: "Shenzhen Optical Factory",
+                    subject: "🚢 Lote Direto da China: 15 ONUs + 3 CTOs (-50%)",
+                    type: "supplier",
+                    read: false,
+                    body: "Prezado Provedor,\n\nDespachamos contêiner promocional de Shenzhen com equipamentos GPON/XGS-PON:\n• 15x Terminais ONU Dual-Band Wi-Fi 6\n• 3x Caixas CTO 16 Portas conectorizadas\n• 2x Bobinas de Fibra Drop\n\nPreço de Fábrica: R$ 1.150 (Economia de 50%).\nPrazo marítimo/fluvial até sua Doca: 5 dias.",
+                    cost: 1150,
+                    onuQty: 15,
+                    ctoQty: 3,
+                    fiberQty: 2,
+                    days: 5,
+                    acted: false
+                },
+                {
+                    id: 2,
+                    sender: "Currículo: Roberto 'Betão' Silva",
+                    subject: "👷 Técnico Sênior Huawei/Datacom & Piloto Fluvial (R$ 600)",
+                    type: "cv",
+                    read: false,
+                    body: "Olá equipe! Tenho 6 anos de experiência em fusão de fibra óptica, montagem de CTOs e piloto lancha voadeira com motor de popa para atender ilhas e comunidades.\n\n• Habilidade: Mestre da Fusão & Navegador Fluvial.\n• Detalhe: Consome peças originais nas revisões.",
+                    candidate: { name: "Roberto 'Betão'", role: "tech", salary: 600, traitPos: "Especialista Huawei & Barco", traitNeg: "Exigente c/ peças" },
+                    acted: false
+                },
+                {
+                    id: 3,
+                    sender: "Hospital Regional",
+                    subject: "🏥 Contrato Link Dedicado VIP: Telemedicina",
+                    type: "vip",
+                    read: false,
+                    body: "Diretoria da TapajósNet,\n\nPrecisamos ativar um circuito dedicado prioritário para o Hospital Regional. Ao autorizar (consome 1 ONU do estoque), pagamos R$ 650 de taxa de instalação imediata e elevamos a reputação da sua rede!",
+                    bonus: 650,
+                    acted: false
+                }
+            ],
+            selectedEmailId: 1
+        };
+
+        let gameTimer = null;
+
+        // ==========================================
+        // NOTIFICAÇÕES TOAST E LOGS
+        // ==========================================
+        function showToast(msg, type = 'cyan') {
+            const container = document.getElementById('toast-container');
+            const colors = {
+                emerald: 'bg-emerald-950/95 border-emerald-500 text-emerald-200',
+                red: 'bg-red-950/95 border-red-500 text-red-200',
+                amber: 'bg-amber-950/95 border-amber-500 text-amber-200',
+                cyan: 'bg-slate-900/95 border-cyan-500 text-cyan-200'
+            };
+            const pill = document.createElement('div');
+            pill.className = `px-3.5 py-1.5 rounded-full border text-xs font-bold shadow-xl transition-all duration-300 ${colors[type] || colors.cyan}`;
+            pill.innerText = msg;
+            container.appendChild(pill);
+            setTimeout(() => {
+                pill.style.opacity = '0';
+                setTimeout(() => pill.remove(), 300);
+            }, 3400);
+        }
+
+        function addLog(msg, color = 'slate') {
+            const container = document.getElementById('system-logs');
+            const colors = {
+                emerald: 'text-emerald-400',
+                red: 'text-red-400 font-semibold',
+                amber: 'text-amber-300',
+                sky: 'text-cyan-300',
+                slate: 'text-slate-300'
+            };
+            const timeStr = `D${state.day} ${String(state.hour).padStart(2, '0')}h`;
+            const div = document.createElement('div');
+            div.className = `${colors[color] || 'text-slate-300'} leading-tight`;
+            div.innerText = `[${timeStr}] ${msg}`;
+            container.prepend(div);
+        }
+
+        // ==========================================
+        // CONTROLE DE INÍCIO, RITMO E VELOCIDADE (8s/dia em 1x)
+        // ==========================================
+        function setEventFrequency(freq) {
+            state.eventFrequency = freq;
+            document.getElementById('start-pacing-select').value = freq;
+            document.getElementById('header-pacing-select').value = freq;
+            const labels = { calmo: 'Calmo / Realista', normal: 'Moderado', intenso: 'Intenso' };
+            addLog(`⏱️ Frequência de eventos ajustada para: ${labels[freq]}.`, 'sky');
+        }
+
+        function startGame(chosenMode) {
+            state.mode = chosenMode;
+            document.getElementById('start-modal').classList.add('hidden');
+            updateModeButtonUI();
+            addLog(`NOC v3.0 iniciado! OLT configurada com 64 clientes/PON (Splitter 1:64).`, 'emerald');
+            showToast(`🚀 OLT 64 Clientes/PON Ativa! Modo ${chosenMode === 'raiz' ? 'Raiz' : 'Investidor'}.`, 'emerald');
+            renderAll();
+            setSpeed(1);
+        }
+
+        function toggleGameMode() {
+            state.mode = state.mode === 'raiz' ? 'investidor' : 'raiz';
+            updateModeButtonUI();
+            showToast(`Modo alterado para: ${state.mode === 'raiz' ? '🛠️ Provedor Raiz' : '👔 Investidor Auto'}`, 'cyan');
+        }
+
+        function updateModeButtonUI() {
+            const btn = document.getElementById('btn-toggle-mode');
+            if (state.mode === 'raiz') {
+                btn.className = "text-[11px] px-2 py-1 rounded border border-emerald-500/40 bg-emerald-500/10 text-emerald-300 hover:bg-emerald-500/20 transition flex items-center gap-1";
+                btn.innerHTML = `<span>🛠️ Modo: Raiz</span>`;
+            } else {
+                btn.className = "text-[11px] px-2 py-1 rounded border border-cyan-500/40 bg-cyan-500/10 text-cyan-300 hover:bg-cyan-500/20 transition flex items-center gap-1";
+                btn.innerHTML = `<span>👔 Modo: Investidor</span>`;
+            }
+        }
+
+        // 6 ticks por dia (4h por tick):
+        // 1x = 1333ms por tick (~8 segundos por dia)
+        // 2x = 666ms por tick (~4 segundos por dia)
+        // 3x = 333ms por tick (~2 segundos por dia)
+        function setSpeed(newSpeed) {
+            state.speed = newSpeed;
+            if (gameTimer) {
+                clearInterval(gameTimer);
+                gameTimer = null;
+            }
+
+            const btnPause = document.getElementById('btn-pause');
+            const btn1 = document.getElementById('btn-speed-1');
+            const btn2 = document.getElementById('btn-speed-2');
+            const btn3 = document.getElementById('btn-speed-3');
+            const banner = document.getElementById('pause-banner');
+
+            btnPause.className = "px-2.5 py-1 rounded text-xs font-bold bg-slate-800 text-slate-300 hover:bg-slate-700 transition";
+            [btn1, btn2, btn3].forEach(b => b.className = "px-2 py-1 rounded text-xs font-bold bg-slate-800 text-slate-400 hover:bg-slate-700 transition mono");
+
+            if (newSpeed === 0) {
+                btnPause.className = "px-2.5 py-1 rounded text-xs font-bold bg-amber-500 text-slate-950 shadow transition";
+                btnPause.innerText = "▶️ CONTINUAR";
+                banner.classList.remove('hidden');
+            } else {
+                btnPause.innerText = "⏸️ PAUSAR";
+                banner.classList.add('hidden');
+                if (newSpeed === 1) {
+                    btn1.className = "px-2 py-1 rounded text-xs font-bold bg-emerald-600 text-white shadow transition mono";
+                    gameTimer = setInterval(gameTick, 1333);
+                } else if (newSpeed === 2) {
+                    btn2.className = "px-2 py-1 rounded text-xs font-bold bg-emerald-600 text-white shadow transition mono";
+                    gameTimer = setInterval(gameTick, 666);
+                } else if (newSpeed === 3) {
+                    btn3.className = "px-2 py-1 rounded text-xs font-bold bg-cyan-600 text-white shadow transition mono";
+                    gameTimer = setInterval(gameTick, 333);
+                }
+            }
+        }
+
+        window.addEventListener('keydown', (e) => {
+            if (e.code === 'Space' && document.getElementById('start-modal').classList.contains('hidden')) {
+                e.preventDefault();
+                setSpeed(state.speed === 0 ? 1 : 0);
+            }
+        });
+
+        // ==========================================
+        // LOOP DE SIMULAÇÃO MAIS ESTRATÉGICO E CALMO
+        // ==========================================
+        function gameTick() {
+            state.hour += 4;
+            handleHourlyEvents();
+
+            if (state.hour >= 24) {
+                state.hour = 0;
+                state.day++;
+                handleDailyEvents();
+
+                if (state.day > 30) {
+                    state.day = 1;
+                    state.month++;
+                    handleMonthlyPayroll();
+                }
+            }
+
+            if (state.mode === 'investidor') {
+                runInvestorAutomation();
+            }
+
+            checkGameOver();
+            renderAll();
+        }
+
+        function handleHourlyEvents() {
+            // Temperatura do Rack OLT
+            const installedCards = state.ponSlots.filter(s => s.installed).length;
+            const archHeat = state.ponCapacityPerCard === 256 ? 4 : (state.ponCapacityPerCard === 128 ? 2 : 0);
+            const ambientHeat = state.weather === 'limpo' ? 25 : 22;
+            const targetTemp = ambientHeat + (installedCards * 4) + archHeat - (state.acLevel * 6);
+            state.rackTemp = Math.max(18, targetTemp);
+
+            // Energia AC vs Gerador a Diesel
+            if (!state.gridPowerOk) {
+                const useGen = (state.generatorMode === 'auto' || state.generatorMode === 'on') && state.stock.diesel >= 4;
+                if (useGen) {
+                    state.stock.diesel = Math.max(0, state.stock.diesel - 4);
+                    state.powerPct = Math.min(100, state.powerPct + 12);
+                } else {
+                    state.powerPct = Math.max(0, state.powerPct - 12);
+                    if (state.powerPct === 0) {
+                        state.reputation = Math.max(5, state.reputation - 3);
+                        addLog("🚨 BLACKOUT NO NOC! Nobreak e Diesel esgotados!", "red");
+                    }
+                }
+            } else {
+                state.powerPct = Math.min(100, state.powerPct + 25);
+            }
+
+            // Resolução automática de tickets pelo Call Center
+            const agentsCount = state.staff.filter(s => s.role === 'agent').length;
+            const resolveCap = Math.min(agentsCount, state.ccDesks);
+            if (state.ticketsList.length > 0 && resolveCap > 0 && state.hour % 8 === 0) {
+                state.ticketsList.splice(0, resolveCap);
+            }
+        }
+
+        function handleDailyEvents() {
+            // Multiplicador de frequência escolhido pelo jogador
+            const freqMult = state.eventFrequency === 'calmo' ? 0.45 : (state.eventFrequency === 'normal' ? 0.85 : 1.35);
+
+            // 1. Receita Diária dos Clientes Ativos
+            const brokenClients = state.zones.filter(z => z.broken).reduce((acc, z) => acc + z.clients, 0);
+            const payingClients = Math.max(0, state.clients - brokenClients - state.defaulters);
+            const dailyRevenue = payingClients * getClientDailyRate();
+            state.money += dailyRevenue;
+
+            // 2. Juros de Empréstimo
+            if (state.loanDebt > 0) {
+                const dailyInterest = Math.ceil(state.loanDebt * 0.015);
+                state.money -= dailyInterest;
+            }
+
+            // 3. Chegada de Contêiner Asiático
+            if (state.pendingDelivery) {
+                state.pendingDelivery.daysLeft--;
+                if (state.pendingDelivery.daysLeft <= 0) {
+                    state.stock.onu += state.pendingDelivery.onu;
+                    state.stock.cto += state.pendingDelivery.cto;
+                    state.stock.fiber += state.pendingDelivery.fiber;
+                    addLog(`🚢 Contêiner Asiático atracou na Doca! (+${state.pendingDelivery.onu} ONUs, +${state.pendingDelivery.cto} CTOs, +${state.pendingDelivery.fiber} Fibras)`, "emerald");
+                    showToast("🚢 Contêiner Asiático descarregado no Almoxarifado!", "emerald");
+                    state.pendingDelivery = null;
+                }
+            }
+
+            // 4. Entrada de Novos Pedidos na Fila (1 a 2 clientes por dia para popular a OLT de 64 portas)
+            const demandMod = state.pricingPolicy === 'popular' ? 1.4 : (state.pricingPolicy === 'premium' ? 0.75 : 1.05);
+            if (Math.random() < (state.reputation / 105) * demandMod && state.queue.length < 10) {
+                const unlockedZones = state.zones.filter(z => z.unlocked);
+                const randomZone = unlockedZones[Math.floor(Math.random() * unlockedZones.length)];
+                const names = ["Padaria Pão Dourado", "Família Oliveira", "Supermercado Tapajós", "Farmácia Santa Clara", "Clínica Vida", "Hotel Mirante do Rio", "Restaurante Amazônia", "Agropecuária Norte", "Escritório Contábil", "Colégio Dom Bosco"];
+                const plans = state.ponCapacityPerCard === 256 ? ["1 Gbps XGS-PON", "2 Gbps VIP"] : (state.licenseLevel >= 2 ? ["500 Mega FTTH", "600 Mega Gamer"] : ["300 Mega FTTH", "400 Mega Fibra"]);
+                state.queue.push({
+                    id: Math.floor(100 + Math.random() * 900),
+                    name: names[Math.floor(Math.random() * names.length)],
+                    plan: plans[Math.floor(Math.random() * plans.length)],
+                    zone: randomZone.name
+                });
+            }
+
+            // 5. Transição Climática com Previsão Antecipada
+            state.weather = state.nextWeather;
+            const rollNext = Math.random();
+            if (rollNext < 0.72) {
+                state.nextWeather = 'limpo';
+            } else if (rollNext < 0.92) {
+                state.nextWeather = 'chuva';
+            } else {
+                state.nextWeather = 'tempestade';
+                addLog("📡 METEOROLOGIA: Alerta de Tempestade Amazônica prevista para amanhã! Verifique seu Diesel.", "amber");
+            }
+
+            if (state.weather === 'tempestade' && Math.random() < 0.30 * freqMult) {
+                state.gridPowerOk = false;
+                addLog("⚡ Queda de energia elétrica externa! NOC operando no Gerador/Nobreak.", "amber");
+                showToast("⚡ Queda de Energia! Gerador a Diesel assumiu.", "amber");
+            } else {
+                state.gridPowerOk = true;
+            }
+
+            // 6. Chance Reduzida e Calibrada de Rompimento de Fibra (~4% a 12% dependendo do clima e ritmo)
+            const baseBreakChance = state.weather === 'tempestade' ? 0.14 : (state.weather === 'chuva' ? 0.06 : 0.025);
+            if (Math.random() < baseBreakChance * freqMult) {
+                const activeZones = state.zones.filter(z => z.unlocked && !z.broken);
+                if (activeZones.length > 0) {
+                    const targetZone = activeZones[Math.floor(Math.random() * activeZones.length)];
+                    targetZone.broken = true;
+                    pushNewTicket(`LOS Crítico em ${targetZone.name}`, "Rompimento de Fibra Óptica no Poste");
+                    addLog(`🔴 ALERTA LOS: Fibra rompida em [${targetZone.name}]! Despache equipe.`, "red");
+                    showToast(`🚨 Rompimento de Fibra em ${targetZone.name}!`, "red");
+                }
+            }
+
+            // 7. Chance suave de atenuação em porta PON
+            if (Math.random() < 0.08 * freqMult) {
+                const activeSlots = state.ponSlots.filter(s => s.installed && s.clients > 0);
+                if (activeSlots.length > 0) {
+                    const sl = activeSlots[Math.floor(Math.random() * activeSlots.length)];
+                    sl.packetLoss = Math.min(12, sl.packetLoss + 4);
+                }
+            }
+
+            // 8. Chamados de suporte moderados
+            if (Math.random() < 0.16 * freqMult && state.ticketsList.length < 6) {
+                const issues = [
+                    "Configuração de Wi-Fi Dual Band",
+                    "Troca de conector APC atenuado",
+                    "Dúvida sobre fatura e upgrade de plano",
+                    "Queda de sessão PPPoE no roteador"
+                ];
+                pushNewTicket(`Assinante #${Math.floor(100 + Math.random() * 899)}`, issues[Math.floor(Math.random() * issues.length)]);
+            }
+
+            if (state.clients > 15 && Math.random() < 0.08 * freqMult) {
+                state.defaulters++;
+            }
+
+            // 9. Avaliação de Reputação
+            const usedMbps = getUsedBandwidthMbps();
+            const activeBreaks = state.zones.filter(z => z.broken).length;
+            if (usedMbps > state.linkCapacityMbps || activeBreaks > 0 || state.ticketsList.length > 5 || state.rackTemp > 42) {
+                state.reputation = Math.max(15, state.reputation - 2);
+            } else {
+                state.reputation = Math.min(100, state.reputation + 1);
+            }
+        }
+
+        function handleMonthlyPayroll() {
+            const staffCost = state.staff.reduce((acc, s) => acc + s.salary, 0);
+            const linkCost = Math.round((state.linkCapacityMbps / 1000) * 400);
+            const totalBill = staffCost + linkCost;
+            state.money -= totalBill;
+            addLog(`💸 FECHAMENTO MENSAL (Dia 30): Folha (R$${staffCost}) + Link Dedicado (R$${linkCost}) pagos.`, "amber");
+            showToast(`💸 Folha e Link Dedicado debitados (-R$ ${totalBill})`, "amber");
+        }
+
+        function runInvestorAutomation() {
+            if (state.queue.length > 0 && state.stock.onu > 0 && state.clients < getTotalOltCapacity() && state.clients < getTotalCtoCapacity()) {
+                provisionClient(true);
+            }
+            if (state.zones.some(z => z.broken) && state.money >= 50) {
+                dispatchFieldTech(true);
+            }
+        }
+
+        // ==========================================
+        // CAPACIDADE OLT (64 -> 128 -> 256) E CTOs
+        // ==========================================
+        function getClientDailyRate() {
+            const base = state.licenseLevel === 1 ? 22 : (state.licenseLevel === 2 ? 30 : 40);
+            const xgsBonus = state.ponCapacityPerCard === 256 ? 6 : (state.ponCapacityPerCard === 128 ? 2 : 0);
+            const mult = state.pricingPolicy === 'popular' ? 0.82 : (state.pricingPolicy === 'premium' ? 1.32 : 1.0);
+            return Math.round((base + xgsBonus) * mult);
+        }
+
+        function getTotalOltCapacity() {
+            return state.ponSlots.filter(s => s.installed).reduce((acc, s) => acc + s.capacity, 0);
+        }
+
+        function getTotalCtoCapacity() {
+            return state.zones.filter(z => z.unlocked).reduce((acc, z) => acc + z.ctoPorts, 0);
+        }
+
+        function getUsedBandwidthMbps() {
+            const baseMbps = state.ponCapacityPerCard === 256 ? 35 : 25;
+            const efficiency = Math.max(0.68, 1 - (state.trainingLevel - 1) * 0.08);
+            return Math.round(state.clients * baseMbps * efficiency);
+        }
+
+        function upgradeOltArchitecture(targetPerPon) {
+            if (targetPerPon === 128) {
+                if (state.ponCapacityPerCard >= 128) {
+                    showToast("Sua OLT já opera em 128+ clientes por PON!", "amber");
+                    return;
+                }
+                if (state.money < 1800) {
+                    showToast("❌ Saldo insuficiente (R$ 1.800)!", "red");
+                    return;
+                }
+                state.money -= 1800;
+                state.ponCapacityPerCard = 128;
+                state.oltArchName = 'GPON 1:128';
+                state.ponSlots.forEach(s => s.capacity = 128);
+                addLog("🚀 UPGRADE DE OLT: Splitters 1:128 de Alta Densidade ativados! Cada porta PON agora suporta 128 clientes.", "emerald");
+                showToast("🚀 OLT atualizada para 128 clientes por PON!", "emerald");
+            } else if (targetPerPon === 256) {
+                if (state.ponCapacityPerCard >= 256) {
+                    showToast("Seu bastidor já é XGS-PON 10G!", "amber");
+                    return;
+                }
+                if (state.money < 3600) {
+                    showToast("❌ Saldo insuficiente (R$ 3.600)!", "red");
+                    return;
+                }
+                state.money -= 3600;
+                state.ponCapacityPerCard = 256;
+                state.oltArchName = 'XGS-PON 10G';
+                state.ponSlots.forEach(s => s.capacity = 256);
+                state.reputation = Math.min(100, state.reputation + 5);
+                addLog("💎 MIGRAÇÃO XGS-PON 10G CONCLUÍDA! Capacidade subiu para 256 clientes por PON (+R$6/dia por assinante).", "emerald");
+                showToast("💎 Chassis XGS-PON 10G (256 Clientes/PON) Ativado!", "emerald");
+            }
+            renderAll();
+        }
+
+        function buyPonCard() {
+            const nextSlot = state.ponSlots.find(s => !s.installed);
+            if (!nextSlot) {
+                showToast("O Chassis OLT já está com os 4 Slots PON ativos!", "amber");
+                return;
+            }
+            if (state.money < 1100) {
+                showToast("❌ Saldo insuficiente (R$ 1.100)!", "red");
+                return;
+            }
+            state.money -= 1100;
+            nextSlot.installed = true;
+            nextSlot.capacity = state.ponCapacityPerCard;
+            addLog(`🖥️ Nova Placa PON instalada no Slot #${nextSlot.id} (+${state.ponCapacityPerCard} portas disponíveis)!`, "emerald");
+            showToast(`🖥️ Slot PON #${nextSlot.id} ativado (+${state.ponCapacityPerCard} clientes)!`, "emerald");
+            renderAll();
+        }
+
+        function provisionClient(isAuto = false) {
+            if (state.queue.length === 0) {
+                if (!isAuto) addLog("Nenhum pedido aguardando na fila.", "slate");
+                return;
+            }
+            if (state.stock.onu <= 0) {
+                if (!isAuto) showToast("❌ Sem ONUs no Almoxarifado! Compre ou importe.", "red");
+                return;
+            }
+            if (state.clients >= getTotalOltCapacity()) {
+                if (!isAuto) showToast("❌ Portas PON da OLT lotadas! Faça upgrade 1:128/256 ou instale nova placa PON.", "red");
+                return;
+            }
+
+            const order = state.queue[0];
+            let targetZone = state.zones.find(z => z.name === order.zone && z.unlocked);
+            if (!targetZone) targetZone = state.zones.find(z => z.unlocked && z.clients < z.ctoPorts) || state.zones[0];
+
+            if (targetZone.clients >= targetZone.ctoPorts) {
+                if (!isAuto) showToast(`❌ CTOs lotadas em ${targetZone.name} (${targetZone.clients}/${targetZone.ctoPorts})! Instale +CTO na aba Mapa.`, "amber");
+                return;
+            }
+
+            const slot = state.ponSlots.find(s => s.installed && s.clients < s.capacity);
+            if (!slot) return;
+
+            state.queue.shift();
+            slot.clients++;
+            targetZone.clients++;
+            state.clients++;
+            if (state.clients > state.peakClients) state.peakClients = state.clients;
+            state.stock.onu--;
+            state.money += 120; // Taxa de instalação
+
+            addLog(`✅ ONU Autorizada: [${order.name}] em ${targetZone.name} (Slot PON #${slot.id} • +R$120).`, "emerald");
+            renderAll();
+        }
+
+        function rejectOrder() {
+            if (state.queue.length === 0) return;
+            const removed = state.queue.shift();
+            addLog(`Pedido de [${removed.name}] recusado.`, "slate");
+            renderAll();
+        }
+
+        function cutDefaulter() {
+            if (state.defaulters <= 0) {
+                addLog("Nenhum cliente inadimplente no momento.", "slate");
+                return;
+            }
+            state.defaulters--;
+            removeOneClient();
+            state.stock.onu++;
+            addLog("✂️ Inadimplente desconectado e 1 ONU recolhida ao estoque.", "amber");
+            renderAll();
+        }
+
+        function removeOneClient() {
+            if (state.clients <= 0) return;
+            state.clients--;
+            const slot = state.ponSlots.find(s => s.installed && s.clients > 0);
+            if (slot) slot.clients--;
+            const zone = state.zones.find(z => z.clients > 0);
+            if (zone) zone.clients--;
+        }
+
+        // ==========================================
+        // SUPRIMENTOS: EXPRESSO NACIONAL vs CONTÊINER ASIÁTICO
+        // ==========================================
+        function buyStock(item, qty, cost) {
+            if (state.money < cost) {
+                showToast("❌ Saldo insuficiente em caixa!", "red");
+                return;
+            }
+            state.money -= cost;
+            state.stock[item] += qty;
+            const labels = { onu: 'ONU(s)', cto: 'Caixa(s) CTO 16p', fiber: 'Bobina(s) Fibra', parts: 'Kit Motor de Popa', diesel: 'Litros de Diesel' };
+            addLog(`📦 Compra Expressa entregue: +${qty} ${labels[item]}.`, "sky");
+            renderAll();
+        }
+
+        function orderAsianContainer(onuQty, ctoQty, fiberQty, cost) {
+            if (state.pendingDelivery) {
+                showToast("🚢 Já existe um contêiner asiático em trânsito!", "amber");
+                return;
+            }
+            if (state.money < cost) {
+                showToast(`❌ Saldo insuficiente (R$ ${cost})!`, "red");
+                return;
+            }
+            state.money -= cost;
+            state.pendingDelivery = {
+                totalDays: 5,
+                daysLeft: 5,
+                onu: onuQty,
+                cto: ctoQty,
+                fiber: fiberQty
+            };
+            addLog(`🚢 Pedido de Contêiner Asiático confirmado! Chegada prevista na Doca em 5 dias.`, "emerald");
+            showToast("🚢 Contêiner despachado de Shenzhen (5 dias)!", "emerald");
+            renderAll();
+        }
+
+        function buyExpressKit() {
+            if (state.money < 920) {
+                showToast("❌ Saldo insuficiente (R$ 920)!", "red");
+                return;
+            }
+            state.money -= 920;
+            state.stock.onu += 5;
+            state.stock.cto += 1;
+            state.stock.fiber += 1;
+            addLog("⚡ Kit Expresso Nacional entregue na hora (+5 ONUs, +1 CTO, +1 Fibra)!", "emerald");
+            showToast("⚡ Kit Expresso adicionado ao Almoxarifado!", "cyan");
+            renderAll();
+        }
+
+        function pushNewTicket(clientName, issueText) {
+            state.ticketsList.push({
+                id: Math.floor(1000 + Math.random() * 9000),
+                client: clientName,
+                issue: issueText
+            });
+        }
+
+        function toggleGenerator() {
+            const modes = ['auto', 'on', 'off'];
+            const next = modes[(modes.indexOf(state.generatorMode) + 1) % modes.length];
+            state.generatorMode = next;
+            addLog(`⚙️ Chave do Gerador a Diesel alterada para: ${next.toUpperCase()}.`, "sky");
+            renderAll();
+        }
+
+        function upgradeAcUnit() {
+            if (state.money < 650) {
+                showToast("❌ Saldo insuficiente (R$ 650)!", "red");
+                return;
+            }
+            state.money -= 650;
+            state.acLevel++;
+            state.rackTemp = Math.max(18, state.rackTemp - 5);
+            addLog(`❄️ Climatização do NOC expandida para Nível ${state.acLevel}!`, "sky");
+            showToast(`❄️ Ar-Condicionado Nível ${state.acLevel} instalado!`, "cyan");
+            renderAll();
+        }
+
+        function upgradeCallCenterRoom() {
+            if (state.money < 550) {
+                showToast("❌ Saldo insuficiente (R$ 550)!", "red");
+                return;
+            }
+            state.money -= 550;
+            state.ccDesks++;
+            state.reputation = Math.min(100, state.reputation + 2);
+            addLog(`🎧 Nova baia de Call Center instalada (${state.ccDesks} baias ativas)!`, "emerald");
+            renderAll();
+        }
+
+        function runCheckPortDiagnostic() {
+            const slot = state.ponSlots[state.selectedPonSlot];
+            if (!slot || !slot.installed) return;
+            slot.packetLoss = 0;
+            state.reputation = Math.min(100, state.reputation + 1);
+            addLog(`🩺 Check Port concluído no Slot #${slot.id}: Atenuação corrigida e perda 0.0%!`, "emerald");
+            showToast(`🩺 Porta PON #${slot.id} recalibrada (-18.9 dBm)!`, "emerald");
+            renderAll();
+        }
+
+        function resetPonPort() {
+            const slot = state.ponSlots[state.selectedPonSlot];
+            if (!slot || !slot.installed) return;
+            slot.packetLoss = 0;
+            addLog(`🔄 Laser óptico do Slot #${slot.id} reiniciado com sucesso.`, "sky");
+            renderAll();
+        }
+
+        function upgradeLink() {
+            if (state.money < 750) {
+                showToast("❌ Saldo insuficiente (R$ 750)!", "red");
+                return;
+            }
+            state.money -= 750;
+            state.linkCapacityMbps += 1000;
+            addLog(`🚀 Upgrade de Link Dedicado BGP: Capacidade subiu para ${state.linkCapacityMbps} Mbps!`, "emerald");
+            showToast(`🚀 Link BGP ampliado para ${state.linkCapacityMbps / 1000} Gbps!`, "emerald");
+            renderAll();
+        }
+
+        function dispatchFieldTech(isAuto = false) {
+            const brokenZone = state.zones.find(z => z.broken);
+            if (!brokenZone) {
+                if (!isAuto) addLog("Nenhuma rota rompida no Mapa Tático.", "slate");
+                return;
+            }
+            const techs = state.staff.filter(s => s.role === 'tech').length;
+            if (techs <= 0) {
+                showToast("❌ Sem técnicos na equipe! Contrate no RH.", "red");
+                return;
+            }
+            if (state.money < 50) {
+                showToast("❌ Sem saldo para combustível (R$ 50)!", "red");
+                return;
+            }
+            if (brokenZone.river && state.boatHealth < 25) {
+                showToast("🚤 Motor de popa em pane! Revise o barco na Sede ou Mapa.", "red");
+                return;
+            }
+
+            state.money -= 50;
+            brokenZone.broken = false;
+            if (brokenZone.river) {
+                state.boatHealth = Math.max(0, state.boatHealth - 25);
+                addLog(`🚤 Lancha cruzou o Rio Tapajós e refez a fusão óptica em [${brokenZone.name}]!`, "emerald");
+            } else {
+                addLog(`🛻 Picape de campo reparou o rompimento de fibra em [${brokenZone.name}]!`, "emerald");
+            }
+            showToast(`✅ Rede restaurada em ${brokenZone.name}!`, "emerald");
+            renderAll();
+        }
+
+        function maintainBoat() {
+            if (state.stock.parts <= 0) {
+                showToast("❌ Sem Kit de Peças de Popa no estoque!", "red");
+                return;
+            }
+            state.stock.parts--;
+            state.boatHealth = 100;
+            addLog("🚤 Motor de popa revisado no Píer Fluvial (Saúde: 100%).", "sky");
+            showToast("🚤 Motor de Popa 100% revisado!", "cyan");
+            renderAll();
+        }
+
+        function setPricingPolicy(policy) {
+            state.pricingPolicy = policy;
+            addLog(`🏷️ Política comercial alterada para: Plano ${policy.toUpperCase()}.`, "sky");
+            renderAll();
+        }
+
+        function resolveSupportTickets() {
+            if (state.ticketsList.length === 0) {
+                addLog("Fila de chamados do Call Center já está limpa!", "slate");
+                return;
+            }
+            state.ticketsList.splice(0, 3);
+            state.reputation = Math.min(100, state.reputation + 1);
+            addLog("🎧 Chamados técnicos solucionados remotamente via gerência TR-069!", "emerald");
+            renderAll();
+        }
+
+        function resolveSingleTicket(id) {
+            state.ticketsList = state.ticketsList.filter(t => t.id !== id);
+            state.reputation = Math.min(100, state.reputation + 1);
+            addLog(`🎧 Chamado #${id} encerrado com sucesso.`, "emerald");
+            renderAll();
+        }
+
+        function unlockZone(zoneId) {
+            const z = state.zones.find(item => item.id === zoneId);
+            if (!z || z.unlocked) return;
+
+            if (state.licenseLevel < z.reqLicense) {
+                showToast(`❌ Exige Licença Anatel Nível ${z.reqLicense}!`, "red");
+                return;
+            }
+            if (state.stock.fiber < 1 || state.stock.cto < 1) {
+                showToast("❌ Requer 1 Bobina de Fibra + 1 Caixa CTO no Almoxarifado!", "red");
+                return;
+            }
+            if (state.money < z.unlockCost) {
+                showToast(`❌ Saldo insuficiente (R$ ${z.unlockCost})!`, "red");
+                return;
+            }
+
+            state.money -= z.unlockCost;
+            state.stock.fiber--;
+            state.stock.cto--;
+            z.unlocked = true;
+            addLog(`🌐 Backbone óptico e primeira CTO inaugurados em [${z.name}]!`, "emerald");
+            showToast(`🌐 ${z.name} conectado à rede FTTH!`, "emerald");
+            renderAll();
+        }
+
+        function expandZoneCto(zoneId) {
+            const z = state.zones.find(item => item.id === zoneId);
+            if (!z || !z.unlocked) return;
+
+            if (state.stock.cto > 0) {
+                state.stock.cto--;
+                z.ctosCount++;
+                z.ctoPorts += 16;
+                addLog(`📡 Caixa CTO (do estoque) instalada no poste em [${z.name}] (+16 vagas).`, "emerald");
+                showToast(`📡 +16 vagas de CTO abertas em ${z.name}!`, "emerald");
+            } else {
+                if (state.money < 260) {
+                    showToast("❌ Sem CTO no estoque e saldo insuficiente (R$ 260)!", "red");
+                    return;
+                }
+                state.money -= 260;
+                z.ctosCount++;
+                z.ctoPorts += 16;
+                addLog(`📡 Nova CTO comprada e instalada em [${z.name}] (+16 vagas).`, "sky");
+                showToast(`📡 +16 vagas de CTO abertas em ${z.name}!`, "cyan");
+            }
+            renderAll();
+        }
+
+        function selectPonSlot(idx) {
+            state.selectedPonSlot = idx;
+            renderNocTab();
+        }
+
+        function selectMapZone(idx) {
+            const z = state.zones[idx];
+            if (z.broken) dispatchFieldTech();
+            else if (!z.unlocked) unlockZone(idx);
+            else expandZoneCto(idx);
+        }
+
+        // ==========================================
+        // E-MAILS, RH, CURSOS NIC.BR E BANCO
+        // ==========================================
+        function switchSubAdmin(sub) {
+            ['inbox', 'training', 'bank'].forEach(s => {
+                document.getElementById(`sub-panel-${s}`).classList.add('hidden');
+                document.getElementById(`sub-btn-${s}`).className = "px-3 py-1 rounded text-xs font-bold bg-slate-800 text-slate-300 hover:bg-slate-700 transition";
+            });
+            document.getElementById(`sub-panel-${sub}`).classList.remove('hidden');
+            document.getElementById(`sub-btn-${sub}`).className = "px-3 py-1 rounded text-xs font-bold bg-blue-600 text-white transition";
+            renderAll();
+        }
+
+        function selectEmail(id) {
+            state.selectedEmailId = id;
+            const mail = state.emails.find(e => e.id === id);
+            if (mail) mail.read = true;
+            renderEmailTab();
+            updateTopBadges();
+        }
+
+        function actOnEmail(id) {
+            const mail = state.emails.find(e => e.id === id);
+            if (!mail || mail.acted) return;
+
+            if (mail.type === 'supplier') {
+                if (state.pendingDelivery) {
+                    showToast("🚢 Já há um contêiner em trânsito!", "amber");
+                    return;
+                }
+                if (state.money < mail.cost) {
+                    showToast("❌ Saldo insuficiente para importar lote!", "red");
+                    return;
+                }
+                state.money -= mail.cost;
+                state.pendingDelivery = {
+                    totalDays: mail.days,
+                    daysLeft: mail.days,
+                    onu: mail.onuQty,
+                    cto: mail.ctoQty || 2,
+                    fiber: mail.fiberQty
+                };
+                mail.acted = true;
+                addLog(`🚢 Importação de Shenzhen confirmada! Chegada em ${mail.days} dias.`, "emerald");
+                showToast("🚢 Lote Asiático contratado via Webmail!", "emerald");
+            } else if (mail.type === 'cv') {
+                state.staff.push({
+                    id: Date.now(),
+                    name: mail.candidate.name,
+                    role: mail.candidate.role,
+                    salary: mail.candidate.salary,
+                    traitPos: mail.candidate.traitPos,
+                    traitNeg: mail.candidate.traitNeg
+                });
+                mail.acted = true;
+                addLog(`👷 Contratado: ${mail.candidate.name} (R$${mail.candidate.salary}/mês).`, "emerald");
+                showToast(`👷 ${mail.candidate.name} entrou para a equipe!`, "emerald");
+            } else if (mail.type === 'vip') {
+                if (state.stock.onu < 1) {
+                    showToast("❌ Requer 1 ONU no estoque!", "red");
+                    return;
+                }
+                state.stock.onu--;
+                state.money += mail.bonus;
+                state.reputation = Math.min(100, state.reputation + 5);
+                mail.acted = true;
+                addLog(`🏥 Link Dedicado VIP ativado! Bônus +R$ ${mail.bonus} em caixa.`, "emerald");
+                showToast(`🏥 Contrato VIP ativado (+R$ ${mail.bonus})!`, "emerald");
+            }
+            renderAll();
+        }
+
+        function generateNewCandidateEmail() {
+            if (state.money < 50) {
+                showToast("❌ Saldo insuficiente (R$ 50)!", "red");
+                return;
+            }
+            state.money -= 50;
+            const pool = [
+                { name: "Lucas Ferreira", role: "tech", salary: 520, traitPos: "Mestre da Fusão", traitNeg: "Lento na chuva" },
+                { name: "Amanda Ribeiro", role: "agent", salary: 440, traitPos: "Retenção de Clientes", traitNeg: "Pede café expresso" },
+                { name: "Marcos 'BGP'", role: "tech", salary: 680, traitPos: "Especialista Huawei/Datacom", traitNeg: "Salário Sênior" },
+                { name: "Tiago Ribeirinho", role: "tech", salary: 560, traitPos: "Navegador Fluvial", traitNeg: "Gambiarreiro no UTP" }
+            ];
+            const pick = pool[Math.floor(Math.random() * pool.length)];
+            const newId = Date.now();
+            state.emails.unshift({
+                id: newId,
+                sender: `Currículo: ${pick.name}`,
+                subject: `${pick.role === 'tech' ? '👷 Técnico FTTH' : '🎧 Analista de Suporte'} (R$ ${pick.salary})`,
+                type: "cv",
+                read: false,
+                body: `Prezados,\nEncaminho meu currículo para avaliação do RH.\n\n• Cargo: ${pick.role === 'tech' ? 'Técnico de Fibra / Campo' : 'Operador de Call Center'}\n• Ponto Forte: ${pick.traitPos}\n• Observação: ${pick.traitNeg}\n• Pretensão Salarial: R$ ${pick.salary}/mês.`,
+                candidate: pick,
+                acted: false
+            });
+            state.selectedEmailId = newId;
+            showToast("📢 Novo currículo recebido no Webmail!", "cyan");
+            renderAll();
+        }
+
+        function buyStaffTraining() {
+            if (state.money < 600) {
+                showToast("❌ Saldo insuficiente (R$ 600)!", "red");
+                return;
+            }
+            state.money -= 600;
+            state.trainingLevel++;
+            state.reputation = Math.min(100, state.reputation + 5);
+            addLog(`🎓 Equipe certificada no curso NIC.br (Nível ${state.trainingLevel})! Uso de banda BGP otimizado.`, "emerald");
+            showToast(`🎓 Certificação NIC.br Nível ${state.trainingLevel} concluída!`, "emerald");
+            renderAll();
+        }
+
+        function buyLicense(level, cost, reqClients, reqRep) {
+            if (state.licenseLevel >= level) return;
+            if (state.clients < reqClients || state.reputation < reqRep) {
+                showToast(`❌ Exige ${reqClients} clientes ativos e ${reqRep}% reputação!`, "red");
+                return;
+            }
+            if (state.money < cost) {
+                showToast(`❌ Saldo insuficiente (R$ ${cost})!`, "red");
+                return;
+            }
+            state.money -= cost;
+            state.licenseLevel = level;
+            addLog(`🏆 Outorga Anatel Nível ${level} conquistada! Novas zonas e planos liberados.`, "emerald");
+            showToast(`🏆 Licença Nível ${level} Desbloqueada!`, "emerald");
+            renderAll();
+        }
+
+        function takeLoan(amount) {
+            if (state.loanDebt >= 8000) {
+                showToast("❌ Limite de crédito bancário atingido!", "red");
+                return;
+            }
+            state.money += amount;
+            state.loanDebt += amount;
+            addLog(`💳 Empréstimo bancário liberado: +R$ ${amount}.`, "amber");
+            renderAll();
+        }
+
+        function payLoan(amount) {
+            if (state.loanDebt <= 0) return;
+            const payVal = Math.min(amount, state.loanDebt);
+            if (state.money < payVal) {
+                showToast("❌ Saldo insuficiente para amortizar!", "red");
+                return;
+            }
+            state.money -= payVal;
+            state.loanDebt -= payVal;
+            addLog(`🏦 Dívida bancária amortizada em R$ ${payVal}.`, "emerald");
+            renderAll();
+        }
+
+        function checkGameOver() {
+            if (state.money < -4000) {
+                setSpeed(0);
+                document.getElementById('go-days').innerText = (state.month - 1) * 30 + state.day;
+                document.getElementById('go-clients').innerText = state.peakClients;
+                document.getElementById('go-olt-arch').innerText = state.oltArchName;
+                document.getElementById('gameover-modal').classList.remove('hidden');
+            }
+        }
+
+        // ==========================================
+        // NAVEGAÇÃO E RENDERIZAÇÃO COMPLETA DA UI
+        // ==========================================
+        function switchTab(tabName) {
+            const tabs = ['hq', 'noc', 'map', 'callcenter', 'email'];
+            tabs.forEach(t => {
+                document.getElementById(`tab-${t}`).classList.add('hidden');
+                const btn = document.getElementById(`tab-btn-${t}`);
+                btn.className = "tab-btn px-2.5 py-1.5 rounded-md text-xs font-semibold text-slate-400 hover:text-white hover:bg-slate-800 transition flex items-center gap-1.5 relative";
+            });
+
+            document.getElementById(`tab-${tabName}`).classList.remove('hidden');
+            const activeBtn = document.getElementById(`tab-btn-${tabName}`);
+            activeBtn.className = "tab-btn px-2.5 py-1.5 rounded-md text-xs font-semibold bg-cyan-600 text-white transition flex items-center gap-1.5 relative shadow";
+
+            renderAll();
+        }
+
+        function updateTopBadges() {
+            const unread = state.emails.filter(e => !e.read).length;
+            const emailBadge = document.getElementById('badge-email-count');
+            emailBadge.innerText = unread;
+            emailBadge.style.display = unread > 0 ? 'inline-block' : 'none';
+
+            const tCount = state.ticketsList.length;
+            const ticketBadge = document.getElementById('badge-ticket-count');
+            ticketBadge.innerText = tCount;
+            ticketBadge.style.display = tCount > 0 ? 'inline-block' : 'none';
+
+            const hasBreak = state.zones.some(z => z.broken);
+            document.getElementById('badge-map-alert').classList.toggle('hidden', !hasBreak);
+
+            const hasLoss = state.ponSlots.some(s => s.packetLoss > 0);
+            document.getElementById('badge-olt-alert').classList.toggle('hidden', !hasLoss);
+
+            document.getElementById('tab-olt-arch').innerText = `${state.ponCapacityPerCard}/PON`;
+        }
+
+        function renderAll() {
+            // Relógio, Clima Atual + Previsão de Amanhã
+            document.getElementById('ui-month').innerText = state.month;
+            document.getElementById('ui-day').innerText = state.day;
+            document.getElementById('ui-hour').innerText = `${String(state.hour).padStart(2, '0')}:00`;
+
+            const wIcons = { limpo: '☀️ Sol', chuva: '🌧️ Chuva Leve', tempestade: '⛈️ Tempestade' };
+            document.getElementById('top-weather-pill').innerText = `${wIcons[state.weather]} (Prev: ${wIcons[state.nextWeather]})`;
+
+            const licenseNames = {
+                1: "📜 Lic. Nv.1: SCM Local",
+                2: "📜 Lic. Nv.2: FTTH Regional",
+                3: "📜 Lic. Nv.3: XGS-PON & Subfluvial"
+            };
+            document.getElementById('badge-license').innerText = licenseNames[state.licenseLevel];
+
+            // Finanças, Capacidade OLT e CTOs (Coluna Esquerda)
+            const moneyEl = document.getElementById('ui-money');
+            moneyEl.innerText = `R$ ${state.money.toLocaleString('pt-BR')}`;
+            moneyEl.className = `mono font-extrabold text-base ${state.money >= 0 ? 'text-emerald-400' : 'text-red-400'}`;
+
+            const brokenClients = state.zones.filter(z => z.broken).reduce((acc, z) => acc + z.clients, 0);
+            const payingClients = Math.max(0, state.clients - brokenClients - state.defaulters);
+            document.getElementById('ui-daily-rev').innerText = `+R$ ${payingClients * getClientDailyRate()}/dia`;
+
+            const staffCost = state.staff.reduce((acc, s) => acc + s.salary, 0);
+            const linkCost = Math.round((state.linkCapacityMbps / 1000) * 400);
+            document.getElementById('ui-monthly-cost').innerText = `-R$ ${staffCost + linkCost}/mês`;
+
+            document.getElementById('ui-clients').innerText = state.clients;
+            document.getElementById('ui-olt-cap').innerText = getTotalOltCapacity();
+            document.getElementById('ui-olt-per-pon').innerText = `${state.ponCapacityPerCard}/PON`;
+            document.getElementById('ui-clients-cto').innerText = state.clients;
+            document.getElementById('ui-cto-cap').innerText = getTotalCtoCapacity();
+            document.getElementById('ui-reputation-badge').innerText = `⭐ Rep: ${state.reputation}%`;
+
+            // Estoque (5 itens) + Barra de Contêiner Asiático
+            document.getElementById('ui-stock-onu').innerText = state.stock.onu;
+            document.getElementById('ui-stock-cto').innerText = state.stock.cto;
+            document.getElementById('ui-stock-fiber').innerText = state.stock.fiber;
+            document.getElementById('ui-stock-parts').innerText = state.stock.parts;
+            document.getElementById('ui-stock-diesel').innerText = `${state.stock.diesel}L`;
+
+            const delivEl = document.getElementById('ui-delivery-timer');
+            const progWrap = document.getElementById('ui-container-progress-wrap');
+            if (state.pendingDelivery) {
+                delivEl.classList.remove('hidden');
+                progWrap.classList.remove('hidden');
+                delivEl.innerText = `🚢 ${state.pendingDelivery.daysLeft}d`;
+                document.getElementById('ui-container-days').innerText = `${state.pendingDelivery.daysLeft}d restantes`;
+                const pct = Math.max(15, Math.round(((state.pendingDelivery.totalDays - state.pendingDelivery.daysLeft) / state.pendingDelivery.totalDays) * 100));
+                document.getElementById('ui-container-bar').style.width = `${pct}%`;
+            } else {
+                delivEl.classList.add('hidden');
+                progWrap.classList.add('hidden');
+            }
+
+            // Telemetria NOC
+            const tempBadge = document.getElementById('ui-temp-badge');
+            tempBadge.innerText = `🌡️ ${state.rackTemp}°C`;
+            tempBadge.className = `mono text-[11px] font-bold ${state.rackTemp <= 35 ? 'text-cyan-300' : (state.rackTemp <= 42 ? 'text-amber-400' : 'text-red-400 animate-pulse')}`;
+
+            const powerBar = document.getElementById('ui-power-bar');
+            const powerText = document.getElementById('ui-power-text');
+            powerBar.style.width = `${state.powerPct}%`;
+            powerText.innerText = `${state.powerPct}% (${state.gridPowerOk ? 'Rede AC' : 'Gerador/Bat!'})`;
+            powerBar.className = `h-full transition-all duration-300 ${state.powerPct > 50 ? 'bg-lime-500' : 'bg-red-500'}`;
+
+            document.getElementById('btn-gen-toggle').innerText = `⚙️ Gerador: ${state.generatorMode.toUpperCase()}`;
+
+            const usedMbps = getUsedBandwidthMbps();
+            const trafficPct = Math.min(100, Math.round((usedMbps / state.linkCapacityMbps) * 100));
+            const trafficBar = document.getElementById('ui-traffic-bar');
+            document.getElementById('ui-traffic-text').innerText = `${usedMbps} / ${state.linkCapacityMbps} Mbps`;
+            trafficBar.style.width = `${trafficPct}%`;
+
+            const anyBreak = state.zones.some(z => z.broken);
+            let ping = 9 + Math.round(trafficPct / 9) + (state.rackTemp > 42 ? 35 : 0);
+            if (trafficPct > 85) {
+                trafficBar.className = "bg-amber-500 h-full transition-all duration-300";
+                ping += 45;
+            } else {
+                trafficBar.className = "bg-emerald-500 h-full transition-all duration-300";
+            }
+            if (anyBreak) ping = 170;
+            const pingBadge = document.getElementById('ui-ping-badge');
+            pingBadge.innerText = `${ping} ms`;
+            pingBadge.className = `mono text-[11px] font-bold ${ping < 35 ? 'text-emerald-400' : (ping < 90 ? 'text-amber-400' : 'text-red-400')}`;
+
+            // Coluna Direita: Fila de Provisionamento e Chamados
+            document.getElementById('ui-queue-badge').innerText = `${state.queue.length} na fila`;
+            document.getElementById('ui-defaulters').innerText = state.defaulters;
+            const provList = document.getElementById('provisioning-list');
+            if (state.queue.length === 0) {
+                provList.innerHTML = `<div class="text-xs text-slate-500 italic py-3 text-center">Aguardando novos contratos...</div>`;
+            } else {
+                provList.innerHTML = state.queue.map((item, i) => `
+                    <div class="bg-slate-900/90 border border-slate-800 rounded p-1.5 flex justify-between items-center text-xs">
+                        <div class="truncate pr-1">
+                            <div class="font-bold text-slate-200 truncate">${i === 0 ? '🔓 ' : '🔒 '}${item.name}</div>
+                            <div class="text-[10px] text-slate-400">${item.plan} • ${item.zone}</div>
+                        </div>
+                        ${i === 0 ? `<span class="text-[9px] bg-emerald-500/20 text-emerald-300 px-1.5 py-0.5 rounded shrink-0">Pronto</span>` : ''}
+                    </div>
+                `).join('');
+            }
+
+            const breaksCount = state.zones.filter(z => z.broken).length;
+            const breaksBadge = document.getElementById('ui-breaks-badge');
+            breaksBadge.innerText = breaksCount > 0 ? `${breaksCount} Rompimento(s)!` : 'Rede Íntegra';
+            breaksBadge.className = `text-[11px] font-bold ${breaksCount > 0 ? 'text-red-400 animate-pulse' : 'text-emerald-400'}`;
+            document.getElementById('ui-support-tickets').innerText = state.ticketsList.length;
+
+            updateTopBadges();
+            renderHqTab();
+            renderNocTab();
+            renderMapTab();
+            renderCallCenterTab();
+            renderEmailTab();
+        }
+
+        function renderHqTab() {
+            const installedCards = state.ponSlots.filter(s => s.installed).length;
+            document.getElementById('hq-noc-level').innerText = `Ar-Cond. Nv.${state.acLevel}`;
+            document.getElementById('hq-rack-slots').innerText = `${installedCards}/4 PON (${state.ponCapacityPerCard}p)`;
+            document.getElementById('hq-ac-temp').innerText = `Temp: ${state.rackTemp}°C`;
+            document.getElementById('hq-gen-fuel').innerText = `Diesel: ${state.stock.diesel}L`;
+
+            const agents = state.staff.filter(s => s.role === 'agent').length;
+            const techs = state.staff.filter(s => s.role === 'tech').length;
+            document.getElementById('hq-cc-desks').innerText = `${agents}/${state.ccDesks} Baias`;
+            document.getElementById('hq-cc-agents').innerText = `${agents} Operador(es)`;
+            document.getElementById('hq-cc-tickets').innerText = `${state.ticketsList.length} Chamado(s)`;
+
+            document.getElementById('hq-wh-onu').innerText = `${state.stock.onu} ONU | ${state.stock.cto} CTO`;
+            document.getElementById('hq-wh-fiber').innerText = `${state.stock.fiber} Bobinas`;
+            document.getElementById('hq-wh-ship').innerText = state.pendingDelivery ? `Chega em ${state.pendingDelivery.daysLeft}d` : 'Doca Livre';
+
+            document.getElementById('hq-boat-cond').innerText = `Motor: ${state.boatHealth}%`;
+            document.getElementById('hq-field-techs').innerText = `${techs} Técnico(s)`;
+        }
+
+        function renderNocTab() {
+            document.getElementById('olt-chassis-temp').innerText = `🌡️ CHASSIS: ${state.rackTemp}°C`;
+            document.getElementById('noc-arch-badge').innerText = `${state.oltArchName} (${state.ponCapacityPerCard} Clientes/PON)`;
+            document.getElementById('btn-pon-cap-label').innerText = `+${state.ponCapacityPerCard} Vagas`;
+            document.getElementById('rack-olt-title').innerText = `OLT ${state.oltArchName} (${state.ponCapacityPerCard} CLIENTES / PON)`;
+            document.getElementById('rack-total-cap-badge').innerText = `Cap Total: ${getTotalOltCapacity()}`;
+
+            // Cards de Upgrade de Arquitetura (64 -> 128 -> 256)
+            const btn128 = document.getElementById('btn-upg-128');
+            const btn256 = document.getElementById('btn-upg-256');
+            if (state.ponCapacityPerCard >= 128) {
+                btn128.innerText = "✅ Splitter 1:128 Ativo";
+                btn128.className = "mt-1.5 w-full py-1 bg-emerald-950/60 border border-emerald-500/40 text-emerald-400 text-[10px] font-bold rounded cursor-default";
+            }
+            if (state.ponCapacityPerCard >= 256) {
+                btn256.innerText = "✅ XGS-PON 256/PON Ativo";
+                btn256.className = "mt-1.5 w-full py-1 bg-emerald-950/60 border border-emerald-500/40 text-emerald-400 text-[10px] font-bold rounded cursor-default";
+            }
+
+            const container = document.getElementById('olt-slots-container');
+            container.innerHTML = state.ponSlots.map((slot, idx) => {
+                const isSelected = state.selectedPonSlot === idx;
+                const zone = state.zones[slot.zoneIndex];
+                if (!slot.installed) {
+                    return `
+                        <div onclick="selectPonSlot(${idx})" class="cursor-pointer p-2 rounded border ${isSelected ? 'border-cyan-500 bg-slate-800/80' : 'border-slate-800 bg-slate-950/60'} flex justify-between items-center">
+                            <span class="mono text-xs text-slate-500">SLOT PON #${slot.id} — [SLOT VAZIO • Suporta ${state.ponCapacityPerCard} ONUs]</span>
+                            <span class="w-2.5 h-2.5 rounded-full led-off"></span>
+                        </div>
+                    `;
+                }
+
+                let ledClass = 'led-green';
+                let statusLabel = 'PON OK';
+                if (zone && zone.broken) {
+                    ledClass = 'led-red';
+                    statusLabel = 'LOS CRÍTICO';
+                } else if (slot.packetLoss > 0 || slot.clients >= slot.capacity * 0.88) {
+                    ledClass = 'led-orange';
+                    statusLabel = slot.packetLoss > 0 ? `PERDA ${slot.packetLoss}%` : 'ALTA CARGA';
+                }
+
+                return `
+                    <div onclick="selectPonSlot(${idx})" class="cursor-pointer p-2 rounded border ${isSelected ? 'border-cyan-500 bg-slate-800' : 'border-slate-700 bg-slate-950'} flex justify-between items-center transition">
+                        <div>
+                            <div class="mono text-xs font-bold text-white">SLOT PON #${slot.id} (${state.oltArchName})</div>
+                            <div class="text-[10px] text-slate-400">Clientes Provisionados: <strong class="text-cyan-300">${slot.clients} / ${slot.capacity}</strong></div>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="text-[10px] mono text-slate-300">${statusLabel}</span>
+                            <span class="w-3 h-3 rounded-full ${ledClass}"></span>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            const selSlot = state.ponSlots[state.selectedPonSlot];
+            const selZone = state.zones[selSlot.zoneIndex];
+            document.getElementById('insp-slot-id').innerText = `SLOT #${selSlot.id}`;
+            document.getElementById('insp-splitter').innerText = `Splitter 1:${state.ponCapacityPerCard}`;
+            if (!selSlot.installed) {
+                document.getElementById('insp-status').innerText = "DESCONECTADO";
+                document.getElementById('insp-status').className = "font-bold text-slate-500";
+                document.getElementById('insp-dbm').innerText = "-- dBm";
+                document.getElementById('insp-onus').innerText = `0 / ${state.ponCapacityPerCard}`;
+                document.getElementById('insp-loss').innerText = "0.0%";
+            } else {
+                const isBroken = selZone && selZone.broken;
+                document.getElementById('insp-status').innerText = isBroken ? "LOS (ROMPIMENTO)" : "LASER ONLINE";
+                document.getElementById('insp-status').className = `font-bold ${isBroken ? 'text-red-400' : 'text-emerald-400'}`;
+                document.getElementById('insp-dbm').innerText = isBroken ? "-40.0 dBm (Sem Luz)" : (selSlot.packetLoss > 0 ? "-27.4 dBm (Atenuado)" : "-18.9 dBm (Ideal)");
+                document.getElementById('insp-onus').innerText = `${selSlot.clients} / ${selSlot.capacity} ONUs`;
+                document.getElementById('insp-loss').innerText = `${selSlot.packetLoss}.0%`;
+                document.getElementById('insp-loss').className = `mono font-bold ${selSlot.packetLoss > 0 ? 'text-amber-400' : 'text-emerald-400'}`;
+            }
+        }
+
+        function renderMapTab() {
+            document.getElementById('map-boat-pct').innerText = `${state.boatHealth}%`;
+
+            state.zones.forEach((z, idx) => {
+                const line = document.getElementById(`svg-line-${idx + 1}`);
+                const node = document.getElementById(`svg-node-${idx}`);
+                if (!line || !node) return;
+
+                if (!z.unlocked) {
+                    line.setAttribute('stroke', '#334155');
+                    line.setAttribute('class', '');
+                    node.setAttribute('stroke', '#475569');
+                } else if (z.broken) {
+                    line.setAttribute('stroke', '#ef4444');
+                    line.setAttribute('class', '');
+                    node.setAttribute('stroke', '#ef4444');
+                } else {
+                    line.setAttribute('stroke', '#22c55e');
+                    line.setAttribute('class', 'fiber-line-active');
+                    node.setAttribute('stroke', '#22c55e');
+                }
+            });
+
+            const grid = document.getElementById('map-zones-grid');
+            grid.innerHTML = state.zones.map(z => {
+                if (!z.unlocked) {
+                    return `
+                        <div class="bg-slate-900/80 border border-slate-800 rounded p-2 flex justify-between items-center">
+                            <div>
+                                <div class="text-xs font-bold text-slate-300">🔒 ${z.name}</div>
+                                <div class="text-[10px] text-slate-400">Req: Lic. Nv.${z.reqLicense} + 1 Fibra + 1 CTO</div>
+                            </div>
+                            <button onclick="unlockZone(${z.id})" class="px-2.5 py-1 bg-cyan-600 hover:bg-cyan-500 text-white text-[11px] font-bold rounded transition shrink-0">
+                                Ativar (R$${z.unlockCost})
+                            </button>
+                        </div>
+                    `;
+                }
+
+                return `
+                    <div class="bg-slate-900 border ${z.broken ? 'border-red-500 bg-red-950/20' : 'border-slate-800'} rounded p-2 flex justify-between items-center">
+                        <div>
+                            <div class="text-xs font-bold text-white flex items-center gap-1.5">
+                                <span>${z.river ? '🚤' : '📡'} ${z.name}</span>
+                                <span class="text-[10px] mono text-cyan-300">(${z.ctosCount} CTOs)</span>
+                                ${z.broken ? '<span class="text-[9px] bg-red-600 text-white px-1 rounded animate-pulse">LOS!</span>' : ''}
+                            </div>
+                            <div class="text-[10px] text-slate-400">Vagas CTO: <strong class="text-white">${z.clients}/${z.ctoPorts}</strong> • Sinal: <span class="mono text-emerald-400">${z.dbm} dBm</span></div>
+                        </div>
+                        ${z.broken ? `
+                            <button onclick="dispatchFieldTech()" class="px-2.5 py-1 bg-red-600 hover:bg-red-500 text-white text-[11px] font-bold rounded transition shrink-0">
+                                🔧 Reparar (R$50)
+                            </button>
+                        ` : `
+                            <button onclick="expandZoneCto(${z.id})" class="px-2 py-1 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-cyan-300 text-[10px] font-bold rounded transition shrink-0">
+                                +Instalar CTO (+16p)
+                            </button>
+                        `}
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function renderCallCenterTab() {
+            ['popular', 'padrao', 'premium'].forEach(p => {
+                const el = document.getElementById(`price-card-${p}`);
+                if (state.pricingPolicy === p) {
+                    el.className = "cursor-pointer p-2.5 rounded-lg border-2 border-cyan-500 bg-slate-900 transition shadow";
+                } else {
+                    el.className = "cursor-pointer p-2.5 rounded-lg border border-slate-800 bg-slate-900/60 hover:bg-slate-900 transition";
+                }
+            });
+
+            const demandText = {
+                popular: `🔥 Demanda: Muito Alta (R$ ${getClientDailyRate()}/dia por cliente)`,
+                padrao: `✅ Demanda: Equilibrada (R$ ${getClientDailyRate()}/dia por cliente)`,
+                premium: `💎 Demanda: Seletiva VIP (R$ ${getClientDailyRate()}/dia por cliente)`
+            };
+            document.getElementById('ui-demand-label').innerText = demandText[state.pricingPolicy];
+
+            const agents = state.staff.filter(s => s.role === 'agent').length;
+            document.getElementById('cc-agent-power').innerText = `Atendimento Automático: ${Math.min(agents, state.ccDesks)} chamado(s)/turno`;
+
+            const list = document.getElementById('tickets-list-container');
+            if (state.ticketsList.length === 0) {
+                list.innerHTML = `<div class="text-xs text-slate-500 italic py-6 text-center">🎉 Nenhum chamado técnico pendente! Clientes satisfeitos.</div>`;
+            } else {
+                list.innerHTML = state.ticketsList.map(t => `
+                    <div class="bg-slate-900 border border-slate-800 rounded p-2 flex justify-between items-center text-xs">
+                        <div>
+                            <span class="mono text-[10px] text-purple-400 font-bold">#${t.id}</span>
+                            <strong class="text-white ml-1">${t.client}:</strong>
+                            <span class="text-slate-300 ml-1">${t.issue}</span>
+                        </div>
+                        <button onclick="resolveSingleTicket(${t.id})" class="px-2.5 py-1 bg-purple-600/30 hover:bg-purple-600 border border-purple-500/50 text-purple-200 hover:text-white rounded text-[11px] font-bold transition shrink-0">
+                            Resolver Remoto
+                        </button>
+                    </div>
+                `).join('');
+            }
+        }
+
+        function renderEmailTab() {
+            const listEl = document.getElementById('email-list');
+            listEl.innerHTML = state.emails.map(e => `
+                <div onclick="selectEmail(${e.id})" class="cursor-pointer p-2 rounded border transition ${state.selectedEmailId === e.id ? 'bg-slate-800 border-cyan-500' : 'bg-slate-900/70 border-slate-800 hover:bg-slate-900'}">
+                    <div class="flex justify-between items-center text-[10px] text-slate-400 mb-0.5">
+                        <span class="font-semibold ${!e.read ? 'text-cyan-400' : ''}">${!e.read ? '● ' : ''}${e.sender}</span>
+                        <span>${e.acted ? '✓ OK' : 'Novo'}</span>
+                    </div>
+                    <div class="text-xs font-bold text-slate-200 truncate">${e.subject}</div>
+                </div>
+            `).join('');
+
+            const viewer = document.getElementById('email-viewer');
+            const sel = state.emails.find(e => e.id === state.selectedEmailId);
+            if (sel) {
+                let actionBtn = '';
+                if (!sel.acted) {
+                    if (sel.type === 'supplier') {
+                        actionBtn = `<button onclick="actOnEmail(${sel.id})" class="w-full py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded transition">🚢 Encomendar Contêiner Asiático (R$ ${sel.cost})</button>`;
+                    } else if (sel.type === 'cv') {
+                        actionBtn = `<button onclick="actOnEmail(${sel.id})" class="w-full py-2 bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs rounded transition">✍️ Contratar Profissional (R$ ${sel.candidate.salary}/mês)</button>`;
+                    } else if (sel.type === 'vip') {
+                        actionBtn = `<button onclick="actOnEmail(${sel.id})" class="w-full py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs rounded transition">⚡ Ativar Link Dedicado VIP (+R$ ${sel.bonus})</button>`;
+                    }
+                } else {
+                    actionBtn = `<div class="text-center py-1.5 bg-slate-900 border border-slate-800 rounded text-xs text-emerald-400 font-bold">✅ Concluído</div>`;
+                }
+
+                viewer.innerHTML = `
+                    <div>
+                        <div class="border-b border-slate-800 pb-1.5 mb-2">
+                            <div class="text-[11px] text-slate-400">Remetente: <strong class="text-white">${sel.sender}</strong></div>
+                            <div class="text-xs font-bold text-white">${sel.subject}</div>
+                        </div>
+                        <div class="text-xs text-slate-300 whitespace-pre-line leading-relaxed bg-slate-900/60 p-2.5 rounded border border-slate-800/80">${sel.body}</div>
+                    </div>
+                    <div class="pt-2">${actionBtn}</div>
+                `;
+            }
+
+            document.getElementById('ui-training-lvl').innerText = `Certificação Nv. ${state.trainingLevel}`;
+            document.getElementById('staff-roster-list').innerHTML = state.staff.map(s => `
+                <div class="bg-slate-900 border border-slate-800 rounded p-2 text-xs flex justify-between items-center">
+                    <div>
+                        <div class="font-bold text-white">${s.role === 'tech' ? '👷' : '🎧'} ${s.name}</div>
+                        <div class="text-[10px] text-emerald-400">+ ${s.traitPos} <span class="text-slate-500">• ${s.traitNeg}</span></div>
+                    </div>
+                    <span class="mono text-xs text-amber-300 font-bold">R$${s.salary}</span>
+                </div>
+            `).join('');
+
+            const licenses = [
+                { level: 1, title: "Nv.1: Outorga SCM Inicial", reqClients: 0, reqRep: 0, cost: 0, desc: "Operação nos bairros urbanos iniciais. Receita base: R$ 22/dia." },
+                { level: 2, title: "Nv.2: Expansão FTTH & Ilha", reqClients: 20, reqRep: 80, cost: 1600, desc: "Libera Distrito Industrial e Vila Ribeirinha (Base: R$ 30/dia)." },
+                { level: 3, title: "Nv.3: Operador XGS-PON & Floresta", reqClients: 45, reqRep: 85, cost: 3200, desc: "Libera Comunidade da Floresta e planos Gigabit (Base: R$ 40/dia)." }
+            ];
+
+            document.getElementById('licenses-container').innerHTML = licenses.map(lic => {
+                const owned = state.licenseLevel >= lic.level;
+                return `
+                    <div class="bg-slate-950 border ${owned ? 'border-emerald-500/60' : 'border-slate-800'} rounded-lg p-2.5 flex flex-col justify-between">
+                        <div>
+                            <div class="text-xs font-bold ${owned ? 'text-emerald-400' : 'text-white'} mb-1">${lic.title}</div>
+                            <p class="text-[10px] text-slate-400 mb-1.5">${lic.desc}</p>
+                            ${lic.level > 1 ? `<div class="text-[10px] mono text-amber-300 mb-1.5">Req: ${lic.reqClients} Clientes | ${lic.reqRep}% Rep.</div>` : ''}
+                        </div>
+                        ${owned ? `
+                            <div class="py-1 text-center bg-emerald-950/50 border border-emerald-500/30 rounded text-[10px] font-bold text-emerald-400">✅ OUTORGA ATIVA</div>
+                        ` : `
+                            <button onclick="buyLicense(${lic.level}, ${lic.cost}, ${lic.reqClients}, ${lic.reqRep})" class="py-1 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs rounded transition">
+                                Certificar (R$ ${lic.cost})
+                            </button>
+                        `}
+                    </div>
+                `;
+            }).join('');
+
+            document.getElementById('ui-loan-debt').innerText = `R$ ${state.loanDebt.toLocaleString('pt-BR')}`;
+            const bgpFinance = document.getElementById('ui-bgp-finance-status');
+            if (state.money < 0) {
+                bgpFinance.innerText = `⚠️ Caixa Negativo! Risco de Corte em -R$ 4.000`;
+                bgpFinance.className = "font-bold text-red-400 animate-pulse";
+            } else {
+                bgpFinance.innerText = "Faturas em Dia (Sinal Garantido)";
+                bgpFinance.className = "font-bold text-emerald-400";
+            }
+        }
+    </script>
+</body>
+</html>

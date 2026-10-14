@@ -1,0 +1,2716 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ISP Simulator: Operação NOC v3.1 — TapajósNet</title>
+    <style>
+        /* ==========================================================================
+           CSS 100% NATIVO E BLINDADO (DARK MODE FIXO - NUNCA FICA BRANCO)
+           ========================================================================== */
+        :root {
+            --bg-deep: #070b12;
+            --bg-panel: #0f1623;
+            --bg-card: #162032;
+            --bg-card-hover: #1e2b42;
+            --bg-input: #090e17;
+            --border-subtle: #233149;
+            --border-bright: #334768;
+            --text-main: #f1f5f9;
+            --text-muted: #94a3b8;
+            --text-dim: #64748b;
+            --emerald: #10b981;
+            --emerald-bright: #34d399;
+            --emerald-bg: rgba(16, 185, 129, 0.14);
+            --cyan: #06b6d4;
+            --cyan-bright: #22d3ee;
+            --cyan-bg: rgba(6, 182, 212, 0.14);
+            --amber: #f59e0b;
+            --amber-bright: #fbbf24;
+            --amber-bg: rgba(245, 158, 11, 0.14);
+            --red: #ef4444;
+            --red-bright: #f87171;
+            --red-bg: rgba(239, 68, 68, 0.15);
+            --purple: #8b5cf6;
+            --purple-bright: #a78bfa;
+            --purple-bg: rgba(139, 92, 246, 0.15);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html, body {
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+            background-color: var(--bg-deep) !important;
+            color: var(--text-main) !important;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            font-size: 13px;
+            line-height: 1.4;
+            user-select: none;
+        }
+
+        .mono {
+            font-family: "JetBrains Mono", "Cascadia Code", "Consolas", monospace;
+        }
+
+        /* Scrollbars Customizadas Escuras */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #070b12; }
+        ::-webkit-scrollbar-thumb { background: #26354d; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #3b5275; }
+
+        /* ==========================================================================
+           LAYOUT PRINCIPAL (TOPBAR + 3 COLUNAS FIXAS LADO A LADO)
+           ========================================================================== */
+        .app-shell {
+            display: flex;
+            flex-direction: column;
+            width: 100vw;
+            height: 100vh;
+            background: radial-gradient(circle at 50% 0%, #111c2d 0%, #070b12 80%) !important;
+        }
+
+        .topbar {
+            height: 54px;
+            background-color: #06090f !important;
+            border-bottom: 1px solid var(--border-subtle);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 12px;
+            flex-shrink: 0;
+            gap: 8px;
+        }
+
+        .workspace-grid {
+            display: grid;
+            grid-template-columns: 305px 1fr 335px;
+            gap: 10px;
+            padding: 10px;
+            height: calc(100vh - 54px);
+            width: 100%;
+            overflow: hidden;
+        }
+
+        .col-sidebar {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            height: 100%;
+            overflow: hidden;
+        }
+
+        .col-center {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            overflow: hidden;
+        }
+
+        /* Painéis da HUD */
+        .hud-panel {
+            background-color: var(--bg-panel) !important;
+            border: 1px solid var(--border-subtle);
+            border-radius: 10px;
+            padding: 12px;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 10px 28px rgba(0, 0, 0, 0.55);
+            overflow: hidden;
+        }
+
+        .panel-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid var(--border-subtle);
+            padding-bottom: 8px;
+            margin-bottom: 10px;
+            flex-shrink: 0;
+        }
+
+        .panel-title {
+            font-size: 11px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.7px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        /* ==========================================================================
+           BOTÕES, PÍLULAS E BADGES (SEMPRE COM CONTRASTE ALTO)
+           ========================================================================== */
+        button, select {
+            font-family: inherit;
+            cursor: pointer;
+            border-radius: 6px;
+            font-weight: 600;
+            transition: all 0.15s ease;
+            outline: none;
+        }
+
+        .btn {
+            padding: 7px 11px;
+            font-size: 11.5px;
+            border: 1px solid var(--border-bright);
+            background-color: var(--bg-card);
+            color: var(--text-main);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+        }
+        .btn:hover { background-color: var(--bg-card-hover); border-color: #4b6794; }
+        .btn:active { transform: translateY(1px); }
+
+        .btn-emerald {
+            background-color: rgba(16, 185, 129, 0.2) !important;
+            border: 1px solid #10b981 !important;
+            color: #6ee7b7 !important;
+        }
+        .btn-emerald:hover { background-color: rgba(16, 185, 129, 0.35) !important; color: #ffffff !important; }
+
+        .btn-cyan {
+            background-color: rgba(6, 182, 212, 0.2) !important;
+            border: 1px solid #06b6d4 !important;
+            color: #67e8f9 !important;
+        }
+        .btn-cyan:hover { background-color: rgba(6, 182, 212, 0.35) !important; color: #ffffff !important; }
+
+        .btn-amber {
+            background-color: rgba(245, 158, 11, 0.22) !important;
+            border: 1px solid #f59e0b !important;
+            color: #fde68a !important;
+        }
+        .btn-amber:hover { background-color: rgba(245, 158, 11, 0.38) !important; color: #ffffff !important; }
+
+        .btn-red {
+            background-color: rgba(239, 68, 68, 0.2) !important;
+            border: 1px solid #ef4444 !important;
+            color: #fca5a5 !important;
+        }
+        .btn-red:hover { background-color: rgba(239, 68, 68, 0.35) !important; color: #ffffff !important; }
+
+        .btn-purple {
+            background-color: rgba(139, 92, 246, 0.22) !important;
+            border: 1px solid #8b5cf6 !important;
+            color: #ddd6fe !important;
+        }
+        .btn-purple:hover { background-color: rgba(139, 92, 246, 0.38) !important; color: #ffffff !important; }
+
+        .badge {
+            padding: 3px 8px;
+            border-radius: 5px;
+            font-size: 10.5px;
+            font-weight: 700;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            border: 1px solid var(--border-subtle);
+            background-color: var(--bg-input);
+            color: var(--text-main);
+        }
+
+        /* Navegação de Abas no Topo */
+        .nav-tabs {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            background-color: #0b101b;
+            padding: 4px;
+            border-radius: 8px;
+            border: 1px solid var(--border-subtle);
+        }
+
+        .nav-tab-btn {
+            padding: 6px 11px;
+            border-radius: 6px;
+            font-size: 11.5px;
+            font-weight: 700;
+            color: var(--text-muted);
+            background: transparent;
+            border: 1px solid transparent;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .nav-tab-btn:hover { color: #ffffff; background-color: #151f33; }
+        .nav-tab-btn.active {
+            background-color: #0891b2 !important;
+            color: #ffffff !important;
+            border-color: #22d3ee !important;
+            box-shadow: 0 2px 10px rgba(6, 182, 212, 0.35);
+        }
+
+        /* LEDs Luminosos */
+        .led {
+            width: 9px;
+            height: 9px;
+            border-radius: 50%;
+            display: inline-block;
+            flex-shrink: 0;
+        }
+        .led-green { background-color: #22c55e; box-shadow: 0 0 8px #22c55e; }
+        .led-orange { background-color: #f97316; box-shadow: 0 0 8px #f97316; animation: pulse-fast 1s infinite; }
+        .led-red { background-color: #ef4444; box-shadow: 0 0 10px #ef4444; animation: pulse-fast 0.6s infinite; }
+        .led-cyan { background-color: #06b6d4; box-shadow: 0 0 8px #06b6d4; }
+        .led-off { background-color: #334155; }
+
+        @keyframes pulse-fast {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.35; }
+        }
+
+        /* Barras de Progresso */
+        .progress-track {
+            width: 100%;
+            height: 8px;
+            background-color: #070b12;
+            border: 1px solid var(--border-subtle);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        .progress-fill {
+            height: 100%;
+            transition: width 0.3s ease, background-color 0.3s ease;
+        }
+
+        /* Cartões Internos e Setores Isométricos */
+        .inner-box {
+            background-color: var(--bg-input) !important;
+            border: 1px solid var(--border-subtle);
+            border-radius: 8px;
+            padding: 9px;
+        }
+
+        .sector-card {
+            background: linear-gradient(145deg, #131d31 0%, #0b111e 100%) !important;
+            border: 1px solid var(--border-bright);
+            border-radius: 10px;
+            padding: 11px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            gap: 8px;
+        }
+
+        .sector-mini-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 6px;
+            background-color: #070b12;
+            padding: 7px;
+            border-radius: 8px;
+            border: 1px solid var(--border-subtle);
+            text-align: center;
+        }
+
+        .sector-mini-item {
+            background-color: #101827;
+            border: 1px solid #1f2d46;
+            border-radius: 6px;
+            padding: 6px 4px;
+        }
+
+        /* Rack 42U */
+        .rack-frame {
+            background-color: #0a0f18;
+            border: 3px solid #334155;
+            border-radius: 8px;
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .rack-unit {
+            background: linear-gradient(90deg, #111a2b 0%, #19253b 50%, #111a2b 100%);
+            border: 1px solid #2e405e;
+            border-radius: 6px;
+            padding: 8px 10px;
+        }
+
+        /* Linha de Fibra Animada no SVG */
+        .fiber-line-active {
+            stroke-dasharray: 7 5;
+            animation: fiber-flow 1.2s linear infinite;
+        }
+        @keyframes fiber-flow {
+            to { stroke-dashoffset: -24; }
+        }
+
+        /* Modais */
+        .modal-backdrop {
+            position: fixed;
+            inset: 0;
+            background-color: rgba(4, 7, 13, 0.88);
+            backdrop-filter: blur(6px);
+            z-index: 100;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+        }
+
+        .modal-card {
+            background-color: #0f172a !important;
+            border: 1px solid #334155;
+            border-radius: 12px;
+            max-width: 720px;
+            width: 100%;
+            padding: 20px;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.85);
+            color: var(--text-main);
+        }
+
+        .hidden { display: none !important; }
+
+        /* Utilitários de Grid Interno */
+        .grid-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
+        .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+        .grid-5 { display: grid; grid-template-columns: repeat(5, 1fr); gap: 5px; }
+        .flex-between { display: flex; align-items: center; justify-content: space-between; }
+        .flex-center { display: flex; align-items: center; gap: 6px; }
+
+        /* Responsividade p/ Telas Menores */
+        @media (max-width: 1180px) {
+            html, body, .app-shell { overflow-y: auto; height: auto; }
+            .workspace-grid {
+                grid-template-columns: 1fr;
+                height: auto;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div class="app-shell">
+
+    <!-- CONTAINER DE NOTIFICAÇÕES FLUTUANTES (TOASTS) -->
+    <div id="toast-container" style="position: fixed; bottom: 16px; left: 50%; transform: translateX(-50%); z-index: 120; display: flex; flex-direction: column; gap: 6px; pointer-events: none; align-items: center;"></div>
+
+    <!-- ==========================================================================
+         MODAL 1: BOAS-VINDAS E ESCOLHA DE MODO / RITMO
+         ========================================================================== -->
+    <div id="start-modal" class="modal-backdrop">
+        <div class="modal-card">
+            <div class="flex-between" style="border-bottom: 1px solid var(--border-subtle); padding-bottom: 12px; margin-bottom: 14px;">
+                <div class="flex-center" style="gap: 12px;">
+                    <div style="width: 42px; height: 42px; border-radius: 10px; background: var(--emerald-bg); border: 1px solid var(--emerald); display: flex; align-items: center; justify-content: center; font-size: 22px;">🌐</div>
+                    <div>
+                        <div class="flex-center">
+                            <h1 style="font-size: 18px; font-weight: 800; color: #fff;">ISP SIMULATOR: OPERAÇÃO NOC</h1>
+                            <span class="badge mono" style="border-color: var(--emerald); color: var(--emerald-bright);">v3.1 DARK HUD</span>
+                        </div>
+                        <p style="font-size: 12px; color: var(--text-muted);">OLT 64 / 128 / 256 Clientes por PON • Logística Asiática vs Nacional • Integração GitHub</p>
+                    </div>
+                </div>
+                <button onclick="startGame('raiz')" class="btn">✕ Iniciar Rápido</button>
+            </div>
+
+            <!-- Seletor de Ritmo -->
+            <div class="inner-box flex-between" style="margin-bottom: 14px;">
+                <div>
+                    <div style="font-weight: 700; color: var(--cyan-bright); font-size: 12px;">⏱️ Ritmo da Simulação & Eventos Climáticos</div>
+                    <div style="font-size: 11px; color: var(--text-muted);">Velocidade 1x = <strong>8 segundos por dia</strong> com previsão do tempo antecipada.</div>
+                </div>
+                <select id="start-pacing-select" onchange="setEventFrequency(this.value)" style="background: #162032; color: #fff; border: 1px solid var(--border-bright); padding: 6px 10px; font-size: 12px;">
+                    <option value="calmo" selected>🌿 Calmo / Realista (Recomendado)</option>
+                    <option value="normal">⚖️ Moderado (Padrão)</option>
+                    <option value="intenso">⛈️ Intenso (Tempestades Frequentes)</option>
+                </select>
+            </div>
+
+            <div class="grid-2" style="gap: 12px; margin-bottom: 14px;">
+                <!-- Modo Raiz -->
+                <div onclick="startGame('raiz')" class="sector-card" style="cursor: pointer; border-color: #10b981;">
+                    <div class="flex-between">
+                        <span style="font-weight: 800; font-size: 14px; color: var(--emerald-bright);">🛠️ Modo Provedor Raiz</span>
+                        <span class="badge" style="color: var(--emerald-bright); border-color: var(--emerald);">TÉCNICO + GESTÃO</span>
+                    </div>
+                    <p style="font-size: 12px; color: var(--text-muted);">Comece com 1 placa OLT de <strong>64 clientes por PON</strong> e faça upgrade para Splitters 1:128 e chassis <strong>XGS-PON (256/PON)</strong>. Instale CTOs nos postes, calibre o sinal dBm e gerencie os reparos.</p>
+                    <div class="btn btn-emerald" style="width: 100%; margin-top: 4px;">Começar no Modo Raiz</div>
+                </div>
+
+                <!-- Modo Investidor -->
+                <div onclick="startGame('investidor')" class="sector-card" style="cursor: pointer; border-color: #06b6d4;">
+                    <div class="flex-between">
+                        <span style="font-weight: 800; font-size: 14px; color: var(--cyan-bright);">👔 Modo Investidor Auto</span>
+                        <span class="badge" style="color: var(--cyan-bright); border-color: var(--cyan);">EXECUTIVO</span>
+                    </div>
+                    <p style="font-size: 12px; color: var(--text-muted);">Foque na expansão de bairros, importação de contêineres asiáticos, upgrades de OLT e contratações. O NOC provisiona clientes da fila e despacha equipes automaticamente.</p>
+                    <div class="btn btn-cyan" style="width: 100%; margin-top: 4px;">Começar no Modo Investidor</div>
+                </div>
+            </div>
+
+            <div class="inner-box flex-between" style="font-size: 11.5px; color: var(--text-muted);">
+                <span>💡 Dica: Pressione <strong class="mono" style="color: #fff;">ESPAÇO</strong> ou clique em <strong>[⏸️ PAUSAR]</strong> quando quiser planejar sem pressa.</span>
+                <span class="mono" style="color: var(--cyan-bright);">github.com/ThiagoFerreirared/ISP-SIMULATOR</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==========================================================================
+         MODAL 2: CENTRAL GITHUB SYNC & BACKUP (ThiagoFerreirared/ISP-SIMULATOR)
+         ========================================================================== -->
+    <div id="github-modal" class="modal-backdrop hidden">
+        <div class="modal-card">
+            <div class="flex-between" style="border-bottom: 1px solid var(--border-subtle); padding-bottom: 10px; margin-bottom: 12px;">
+                <div class="flex-center">
+                    <span style="font-size: 20px;">🐙</span>
+                    <div>
+                        <h2 style="font-size: 15px; font-weight: 800; color: #fff;">GitHub Sync & Deploy — ISP-SIMULATOR</h2>
+                        <p class="mono" style="font-size: 11px; color: var(--cyan-bright);">https://github.com/ThiagoFerreirared/ISP-SIMULATOR</p>
+                    </div>
+                </div>
+                <button onclick="toggleGithubModal(false)" class="btn">✕ Fechar</button>
+            </div>
+
+            <div class="grid-2" style="gap: 12px; margin-bottom: 12px;">
+                <div class="inner-box" style="display: flex; flex-direction: column; justify-content: space-between; gap: 8px;">
+                    <div>
+                        <div style="font-weight: 700; color: var(--emerald-bright); margin-bottom: 4px;">1. Atualizar seu Repositório GitHub</div>
+                        <p style="font-size: 11.5px; color: var(--text-muted);">Baixe o código completo deste jogo já com o tema Dark Mode corrigido como <code class="mono" style="color:#fff;">index.html</code> para subir no seu GitHub Pages.</p>
+                    </div>
+                    <div style="display: flex; gap: 6px;">
+                        <button onclick="downloadGameHtml()" class="btn btn-emerald" style="flex: 1;">⬇️ Baixar index.html</button>
+                        <a href="https://github.com/ThiagoFerreirared/ISP-SIMULATOR" target="_blank" rel="noopener noreferrer" class="btn btn-cyan" style="text-decoration: none;">🔗 Abrir Repo</a>
+                    </div>
+                </div>
+
+                <div class="inner-box" style="display: flex; flex-direction: column; justify-content: space-between; gap: 8px;">
+                    <div>
+                        <div style="font-weight: 700; color: var(--amber-bright); margin-bottom: 4px;">2. Savegame Local & Exportação JSON</div>
+                        <p style="font-size: 11.5px; color: var(--text-muted);">Seu progresso é salvo no navegador automaticamente. Você também pode copiar ou restaurar o JSON do seu provedor:</p>
+                    </div>
+                    <div style="display: flex; gap: 6px;">
+                        <button onclick="saveToLocalStorage(true)" class="btn btn-amber" style="flex: 1;">💾 Salvar Agora</button>
+                        <button onclick="exportSaveJson()" class="btn" style="flex: 1;">📋 Copiar Save</button>
+                        <button onclick="resetSaveData()" class="btn btn-red" title="Zerar Progresso">🗑️ Reset</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="inner-box" style="margin-bottom: 10px;">
+                <div class="flex-between" style="margin-bottom: 6px;">
+                    <span style="font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">Comandos Git Prontos para o Terminal (Subir p/ ThiagoFerreirared/ISP-SIMULATOR):</span>
+                    <button onclick="copyGitCommands()" class="btn btn-cyan" style="padding: 3px 8px; font-size: 10.5px;">📋 Copiar Comandos Git</button>
+                </div>
+                <pre id="git-cli-box" class="mono" style="background: #05080f; padding: 10px; border-radius: 6px; border: 1px solid var(--border-subtle); font-size: 11px; color: #34d399; overflow-x: auto;">git init
+git branch -M main
+git remote add origin https://github.com/ThiagoFerreirared/ISP-SIMULATOR.git
+git add index.html
+git commit -m "Update ISP Simulator v3.1 - Dark HUD & 64/128/256 PON"
+git push -u origin main</pre>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==========================================================================
+         MODAL 3: GAME OVER (CORTE DO LINK BGP)
+         ========================================================================== -->
+    <div id="gameover-modal" class="modal-backdrop hidden">
+        <div class="modal-card" style="max-width: 480px; text-align: center; border-color: var(--red);">
+            <div style="font-size: 42px; margin-bottom: 8px;">🔌</div>
+            <h2 style="font-size: 20px; font-weight: 800; color: var(--red-bright); margin-bottom: 6px;">SESSÃO BGP ENCERRADA — FALÊNCIA!</h2>
+            <p style="font-size: 12.5px; color: var(--text-muted); margin-bottom: 14px;">Sua dívida ultrapassou o limite de crédito (-R$ 4.000) e o fornecedor de trânsito IP cortou seu Link Dedicado.</p>
+            <div class="inner-box mono" style="text-align: left; margin-bottom: 16px; display: flex; flex-direction: column; gap: 6px;">
+                <div class="flex-between"><span>Dias Operados:</span> <strong id="go-days" style="color: #fff;">0</strong></div>
+                <div class="flex-between"><span>Pico de Clientes:</span> <strong id="go-clients" style="color: var(--emerald-bright);">0</strong></div>
+                <div class="flex-between"><span>Arquitetura OLT:</span> <strong id="go-olt-arch" style="color: var(--cyan-bright);">GPON 1:64</strong></div>
+            </div>
+            <button onclick="resetSaveData()" class="btn btn-red" style="width: 100%; padding: 10px; font-size: 13px;">🔄 Reiniciar Provedor do Zero</button>
+        </div>
+    </div>
+
+    <!-- ==========================================================================
+         BARRA SUPERIOR DE COMANDO (TOPBAR)
+         ========================================================================== -->
+    <header class="topbar">
+        <!-- Esquerda: Logo + Modo + Clima + Licença + Botão GitHub -->
+        <div class="flex-center" style="gap: 8px;">
+            <div class="flex-center" style="gap: 6px;">
+                <span class="led led-green"></span>
+                <span style="font-weight: 900; font-size: 14px; letter-spacing: 0.5px; color: #fff;">TAPAJÓS<span style="color: var(--cyan-bright);">NET</span></span>
+                <span class="mono" style="font-size: 10px; color: var(--emerald-bright);">v3.1</span>
+            </div>
+
+            <button id="btn-toggle-mode" onclick="toggleGameMode()" class="btn btn-emerald" style="padding: 4px 8px; font-size: 11px;">
+                🛠️ Modo: Raiz
+            </button>
+
+            <div id="top-weather-pill" class="badge" style="color: #7dd3fc;">
+                ☀️ Sol (Prev: ☀️ Sol)
+            </div>
+
+            <div id="badge-license" class="badge" style="color: var(--amber-bright); border-color: rgba(245, 158, 11, 0.4);">
+                📜 Lic. Nv.1: SCM Local
+            </div>
+
+            <button onclick="toggleGithubModal(true)" class="btn" style="padding: 4px 9px; font-size: 11px; border-color: #3b82f6; color: #93c5fd;" title="Conectar ao repositório ThiagoFerreirared/ISP-SIMULATOR">
+                🐙 GitHub Sync
+            </button>
+        </div>
+
+        <!-- Centro: 5 Abas Principais -->
+        <nav class="nav-tabs">
+            <button onclick="switchTab('hq')" id="tab-btn-hq" class="nav-tab-btn active">
+                🏢 Sede & Loja
+            </button>
+            <button onclick="switchTab('noc')" id="tab-btn-noc" class="nav-tab-btn">
+                🖥️ Rack OLT (<span id="tab-olt-arch" class="mono" style="color: var(--emerald-bright);">64/PON</span>)
+                <span id="badge-olt-alert" class="led led-orange hidden"></span>
+            </button>
+            <button onclick="switchTab('map')" id="tab-btn-map" class="nav-tab-btn">
+                🗺️ Mapa & CTOs
+                <span id="badge-map-alert" class="led led-red hidden"></span>
+            </button>
+            <button onclick="switchTab('callcenter')" id="tab-btn-callcenter" class="nav-tab-btn">
+                📞 Call Center & Planos
+                <span id="badge-ticket-count" class="mono" style="background: #7c3aed; color: #fff; padding: 1px 6px; border-radius: 10px; font-size: 10px;">1</span>
+            </button>
+            <button onclick="switchTab('email')" id="tab-btn-email" class="nav-tab-btn">
+                💻 E-mail, RH & Banco
+                <span id="badge-email-count" class="mono" style="background: #2563eb; color: #fff; padding: 1px 6px; border-radius: 10px; font-size: 10px;">3</span>
+            </button>
+        </nav>
+
+        <!-- Direita: Ritmo + Relógio + Pause / 1x / 2x / 3x -->
+        <div class="flex-center" style="gap: 8px;">
+            <select id="header-pacing-select" onchange="setEventFrequency(this.value)" style="background: #0d1422; color: var(--text-main); border: 1px solid var(--border-subtle); padding: 4px 7px; font-size: 11px;">
+                <option value="calmo" selected>🌿 Eventos: Calmo</option>
+                <option value="normal">⚖️ Eventos: Normal</option>
+                <option value="intenso">⛈️ Eventos: Intenso</option>
+            </select>
+
+            <div class="mono" style="text-align: right; line-height: 1.2;">
+                <div style="font-size: 11.5px; font-weight: 800; color: #fff;">MÊS <span id="ui-month">1</span> • DIA <span id="ui-day">1</span> <span style="color: var(--cyan-bright);">(<span id="ui-hour">08:00</span>)</span></div>
+                <div style="font-size: 9.5px; color: var(--text-muted);">Folha: Dia 30 (1x = 8s/dia)</div>
+            </div>
+
+            <div class="flex-center" style="background: #0b101b; padding: 3px; border-radius: 7px; border: 1px solid var(--border-subtle); gap: 3px;">
+                <button id="btn-pause" onclick="setSpeed(0)" class="btn btn-amber" style="padding: 4px 9px; font-size: 11px;">
+                    ⏸️ PAUSAR
+                </button>
+                <button id="btn-speed-1" onclick="setSpeed(1)" class="btn btn-emerald mono" style="padding: 4px 8px; font-size: 11px;">1x</button>
+                <button id="btn-speed-2" onclick="setSpeed(2)" class="btn mono" style="padding: 4px 8px; font-size: 11px;">2x</button>
+                <button id="btn-speed-3" onclick="setSpeed(3)" class="btn mono" style="padding: 4px 8px; font-size: 11px;">3x</button>
+            </div>
+        </div>
+    </header>
+
+    <!-- BANNER FLUTUANTE DE PAUSA -->
+    <div id="pause-banner" class="hidden" style="position: fixed; top: 62px; left: 50%; transform: translateX(-50%); z-index: 60; background: #f59e0b; color: #06090f; font-weight: 900; font-size: 11.5px; padding: 5px 16px; border-radius: 20px; box-shadow: 0 6px 20px rgba(0,0,0,0.6); display: flex; align-items: center; gap: 10px;">
+        <span>⏸️ SIMULAÇÃO PAUSADA — GERENCIE SUA OLT, SEDE E ROTAS SEM PRESSA</span>
+        <button onclick="setSpeed(1)" style="background: #06090f; color: #fbbf24; border: none; padding: 2px 8px; border-radius: 10px; font-size: 10.5px; font-weight: 800;">▶️ Retomar (1x)</button>
+    </div>
+
+    <!-- ==========================================================================
+         WORKSPACE DE 3 COLUNAS FIXAS (ESQUERDA | CENTRO | DIREITA)
+         ========================================================================== -->
+    <main class="workspace-grid">
+
+        <!-- ======================================================================
+             COLUNA ESQUERDA: CAIXA, CAPACIDADE OLT/CTO, ESTOQUE E TELEMETRIA NOC
+             ====================================================================== -->
+        <aside class="col-sidebar">
+
+            <!-- PAINEL 1: CAIXA, CAPACIDADE & ALMOXARIFADO -->
+            <div class="hud-panel" style="flex: 1; justify-content: space-between; overflow-y: auto;">
+                <div>
+                    <div class="panel-header">
+                        <span class="panel-title" style="color: var(--cyan-bright);">📊 Caixa & Capacidade</span>
+                        <span id="ui-reputation-badge" class="badge" style="color: var(--emerald-bright); border-color: rgba(16, 185, 129, 0.4);">⭐ Rep: 94%</span>
+                    </div>
+
+                    <!-- Resumo Financeiro e OLT -->
+                    <div class="inner-box" style="display: flex; flex-direction: column; gap: 5px; margin-bottom: 10px;">
+                        <div class="flex-between">
+                            <span style="color: var(--text-muted);">Saldo em Caixa:</span>
+                            <span id="ui-money" class="mono" style="font-size: 15px; font-weight: 800; color: var(--emerald-bright);">R$ 3.500</span>
+                        </div>
+                        <div class="flex-between">
+                            <span style="color: var(--text-muted);">Receita Líquida:</span>
+                            <span id="ui-daily-rev" class="mono" style="font-weight: 700; color: #6ee7b7;">+R$ 264/dia</span>
+                        </div>
+                        <div class="flex-between">
+                            <span style="color: var(--text-muted);">Custos Fixos (Dia 30):</span>
+                            <span id="ui-monthly-cost" class="mono" style="color: var(--red-bright);">-R$ 1.400/mês</span>
+                        </div>
+                        <div class="flex-between" style="border-top: 1px solid var(--border-subtle); padding-top: 5px; margin-top: 2px;">
+                            <span style="color: var(--text-muted);">Capacidade OLT:</span>
+                            <span class="mono" style="font-weight: 800; color: var(--cyan-bright);"><span id="ui-clients">12</span> / <span id="ui-olt-cap">64</span> (<span id="ui-olt-per-pon">64/PON</span>)</span>
+                        </div>
+                        <div class="flex-between">
+                            <span style="color: var(--text-muted);">Vagas nas CTOs (Rua):</span>
+                            <span class="mono" style="font-weight: 700; color: #fff;"><span id="ui-clients-cto">12</span> / <span id="ui-cto-cap">32</span> portas</span>
+                        </div>
+                    </div>
+
+                    <!-- Estoque Físico (5 Itens) -->
+                    <div style="margin-bottom: 10px;">
+                        <div class="flex-between" style="margin-bottom: 5px;">
+                            <span style="font-size: 10.5px; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">📦 Estoque no Almoxarifado</span>
+                            <span id="ui-delivery-timer" class="mono hidden" style="font-size: 10.5px; color: var(--amber-bright);">🚢 5d</span>
+                        </div>
+
+                        <!-- Barra de Rastreio do Contêiner Asiático -->
+                        <div id="ui-container-progress-wrap" class="inner-box hidden" style="margin-bottom: 6px; border-color: var(--amber);">
+                            <div class="flex-between" style="font-size: 10px; color: var(--amber-bright); margin-bottom: 4px;">
+                                <span>🚢 Navio Shenzhen ➔ Santarém</span>
+                                <span id="ui-container-days" class="mono" style="font-weight: 700;">5d</span>
+                            </div>
+                            <div class="progress-track">
+                                <div id="ui-container-bar" class="progress-fill" style="width: 20%; background: var(--amber);"></div>
+                            </div>
+                        </div>
+
+                        <div class="grid-5" style="text-align: center;">
+                            <div class="inner-box" style="padding: 5px 2px;">
+                                <div style="font-size: 9.5px; color: var(--text-muted);">ONUs</div>
+                                <div id="ui-stock-onu" class="mono" style="font-weight: 800; color: #fff;">8</div>
+                            </div>
+                            <div class="inner-box" style="padding: 5px 2px;">
+                                <div style="font-size: 9.5px; color: var(--text-muted);">CTOs</div>
+                                <div id="ui-stock-cto" class="mono" style="font-weight: 800; color: var(--cyan-bright);">2</div>
+                            </div>
+                            <div class="inner-box" style="padding: 5px 2px;">
+                                <div style="font-size: 9.5px; color: var(--text-muted);">Fibra</div>
+                                <div id="ui-stock-fiber" class="mono" style="font-weight: 800; color: #fff;">4</div>
+                            </div>
+                            <div class="inner-box" style="padding: 5px 2px;">
+                                <div style="font-size: 9.5px; color: var(--text-muted);">Popa</div>
+                                <div id="ui-stock-parts" class="mono" style="font-weight: 800; color: #fff;">2</div>
+                            </div>
+                            <div class="inner-box" style="padding: 5px 2px;">
+                                <div style="font-size: 9.5px; color: var(--text-muted);">Diesel</div>
+                                <div id="ui-stock-diesel" class="mono" style="font-weight: 800; color: var(--amber-bright);">90L</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Compra Expressa Imediata -->
+                <div style="border-top: 1px solid var(--border-subtle); padding-top: 8px;">
+                    <div class="flex-between" style="margin-bottom: 6px;">
+                        <span style="font-size: 10px; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">Compra Expressa (Imediata):</span>
+                        <span onclick="switchTab('hq')" style="font-size: 10.5px; color: var(--cyan-bright); cursor: pointer; font-weight: 700;">🚢 Lotes China (-50%)</span>
+                    </div>
+                    <div class="grid-2" style="gap: 5px;">
+                        <button onclick="buyStock('onu', 2, 260)" class="btn flex-between" style="width: 100%; padding: 6px 8px;">
+                            <span>+2 ONUs</span><span class="mono" style="color: var(--cyan-bright);">R$260</span>
+                        </button>
+                        <button onclick="buyStock('cto', 1, 220)" class="btn flex-between" style="width: 100%; padding: 6px 8px;">
+                            <span>+1 CTO (16p)</span><span class="mono" style="color: var(--cyan-bright);">R$220</span>
+                        </button>
+                        <button onclick="buyStock('fiber', 1, 180)" class="btn flex-between" style="width: 100%; padding: 6px 8px;">
+                            <span>+1 Fibra</span><span class="mono" style="color: var(--cyan-bright);">R$180</span>
+                        </button>
+                        <button onclick="buyStock('parts', 1, 160)" class="btn flex-between" style="width: 100%; padding: 6px 8px;">
+                            <span>+1 Kit Popa</span><span class="mono" style="color: var(--cyan-bright);">R$160</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- PAINEL 2: TELEMETRIA DO NOC -->
+            <div class="hud-panel" style="flex-shrink: 0;">
+                <div class="panel-header">
+                    <span class="panel-title" style="color: var(--emerald-bright);">⚡ Telemetria do NOC</span>
+                    <div class="flex-center" style="gap: 8px;">
+                        <span id="ui-temp-badge" class="mono" style="font-size: 11px; font-weight: 700; color: var(--cyan-bright);">🌡️ 23°C</span>
+                        <span id="ui-ping-badge" class="mono" style="font-size: 11px; font-weight: 700; color: var(--emerald-bright);">11 ms</span>
+                    </div>
+                </div>
+
+                <div style="margin-bottom: 8px;">
+                    <div class="flex-between" style="font-size: 11px; margin-bottom: 4px;">
+                        <span style="color: var(--text-muted);">Bateria Nobreak:</span>
+                        <span id="ui-power-text" class="mono" style="font-weight: 700; color: #84cc16;">100% (Rede AC)</span>
+                    </div>
+                    <div class="progress-track">
+                        <div id="ui-power-bar" class="progress-fill" style="width: 100%; background: #84cc16;"></div>
+                    </div>
+                </div>
+
+                <div style="margin-bottom: 10px;">
+                    <div class="flex-between" style="font-size: 11px; margin-bottom: 4px;">
+                        <span style="color: var(--text-muted);">Tráfego Link BGP:</span>
+                        <span id="ui-traffic-text" class="mono" style="font-weight: 700; color: var(--emerald-bright);">300 / 1000 Mbps</span>
+                    </div>
+                    <div class="progress-track">
+                        <div id="ui-traffic-bar" class="progress-fill" style="width: 30%; background: var(--emerald);"></div>
+                    </div>
+                </div>
+
+                <div class="grid-2" style="gap: 6px; border-top: 1px solid var(--border-subtle); padding-top: 8px;">
+                    <button id="btn-gen-toggle" onclick="toggleGenerator()" class="btn" style="width: 100%;">
+                        ⚙️ Gerador: AUTO
+                    </button>
+                    <button onclick="upgradeLink()" class="btn btn-emerald" style="width: 100%;">
+                        +1 Gbps Link (R$750)
+                    </button>
+                </div>
+            </div>
+
+        </aside>
+
+        <!-- ======================================================================
+             COLUNA CENTRAL: VIEWPORT COM AS 5 ABAS PRINCIPAIS
+             ====================================================================== -->
+        <section class="col-center">
+            <div class="hud-panel" style="flex: 1; height: 100%; overflow-y: auto;">
+
+                <!-- ==============================================================
+                     ABA 1: SEDE ISOMÉTRICA & LOJA ASIÁTICA vs NACIONAL
+                     ============================================================== -->
+                <div id="tab-hq" style="display: flex; flex-direction: column; gap: 10px; height: 100%; justify-content: space-between;">
+                    <div class="flex-between" style="border-bottom: 1px solid var(--border-subtle); padding-bottom: 8px;">
+                        <div>
+                            <div class="flex-center">
+                                <h2 style="font-size: 14px; font-weight: 800; color: #fff; text-transform: uppercase;">🏢 Planta Tática da Sede & Cadeia de Suprimentos</h2>
+                                <span class="badge mono" style="color: var(--cyan-bright); border-color: var(--cyan);">HUD ISOMÉTRICO</span>
+                            </div>
+                            <p style="font-size: 11.5px; color: var(--text-muted);">Gerencie a refrigeração do NOC, baias de atendimento, doca de importação asiática e frota fluvial.</p>
+                        </div>
+                        <button onclick="buyStock('diesel', 50, 120)" class="btn btn-amber">
+                            ⛽ +50L Diesel (R$ 120)
+                        </button>
+                    </div>
+
+                    <!-- Grid 2x2 dos 4 Departamentos da Sede -->
+                    <div class="grid-2" style="gap: 10px;">
+                        <!-- SETOR 01 -->
+                        <div class="sector-card" style="border-color: rgba(6, 182, 212, 0.5);">
+                            <div class="flex-between">
+                                <div>
+                                    <span style="font-size: 9.5px; font-weight: 800; color: var(--cyan-bright); text-transform: uppercase;">SETOR 01 • CLIMATIZAÇÃO & CORE</span>
+                                    <div style="font-size: 13px; font-weight: 800; color: #fff;">🖥️ NOC & Bastidor OLT</div>
+                                </div>
+                                <span id="hq-noc-level" class="badge mono" style="color: var(--cyan-bright);">Ar-Cond. Nv.1</span>
+                            </div>
+                            <div class="sector-mini-grid">
+                                <div onclick="switchTab('noc')" class="sector-mini-item" style="cursor: pointer;">
+                                    <div style="font-size: 16px;">🗄️</div>
+                                    <div style="font-weight: 700; font-size: 10.5px; color: #fff;">Rack 42U</div>
+                                    <div id="hq-rack-slots" class="mono" style="font-size: 9.5px; color: var(--emerald-bright);">1/4 PON (64p)</div>
+                                </div>
+                                <div class="sector-mini-item">
+                                    <div style="font-size: 16px;">❄️</div>
+                                    <div style="font-weight: 700; font-size: 10.5px; color: #fff;">Split Inverter</div>
+                                    <div id="hq-ac-temp" class="mono" style="font-size: 9.5px; color: var(--cyan-bright);">Temp: 23°C</div>
+                                </div>
+                                <div class="sector-mini-item">
+                                    <div style="font-size: 16px;">🔋</div>
+                                    <div style="font-weight: 700; font-size: 10.5px; color: #fff;">Gerador</div>
+                                    <div id="hq-gen-fuel" class="mono" style="font-size: 9.5px; color: var(--amber-bright);">Diesel: 90L</div>
+                                </div>
+                            </div>
+                            <div class="flex-between">
+                                <span style="font-size: 10.5px; color: var(--text-muted);">Resfria OLTs de alta densidade.</span>
+                                <button onclick="upgradeAcUnit()" class="btn btn-cyan" style="padding: 5px 9px;">❄️ +Ar-Cond. (R$ 650)</button>
+                            </div>
+                        </div>
+
+                        <!-- SETOR 02 -->
+                        <div class="sector-card" style="border-color: rgba(139, 92, 246, 0.5);">
+                            <div class="flex-between">
+                                <div>
+                                    <span style="font-size: 9.5px; font-weight: 800; color: var(--purple-bright); text-transform: uppercase;">SETOR 02 • SUPORTE TR-069</span>
+                                    <div style="font-size: 13px; font-weight: 800; color: #fff;">🎧 Call Center & Retenção</div>
+                                </div>
+                                <span id="hq-cc-desks" class="badge mono" style="color: var(--purple-bright);">1/1 Baias</span>
+                            </div>
+                            <div class="sector-mini-grid">
+                                <div onclick="switchTab('callcenter')" class="sector-mini-item" style="cursor: pointer;">
+                                    <div style="font-size: 16px;">👩‍💻</div>
+                                    <div style="font-weight: 700; font-size: 10.5px; color: #fff;">Operadores</div>
+                                    <div id="hq-cc-agents" class="mono" style="font-size: 9.5px; color: var(--purple-bright);">1 Operador(es)</div>
+                                </div>
+                                <div onclick="switchTab('callcenter')" class="sector-mini-item" style="cursor: pointer;">
+                                    <div style="font-size: 16px;">🎫</div>
+                                    <div style="font-weight: 700; font-size: 10.5px; color: #fff;">Fila Tickets</div>
+                                    <div id="hq-cc-tickets" class="mono" style="font-size: 9.5px; color: var(--amber-bright);">1 Chamado(s)</div>
+                                </div>
+                                <div class="sector-mini-item">
+                                    <div style="font-size: 16px;">☕</div>
+                                    <div style="font-weight: 700; font-size: 10.5px; color: #fff;">Café Expresso</div>
+                                    <div style="font-size: 9.5px; color: var(--emerald-bright);">Moral Alta</div>
+                                </div>
+                            </div>
+                            <div class="flex-between">
+                                <span style="font-size: 10.5px; color: var(--text-muted);">Resolve tickets automaticamente.</span>
+                                <button onclick="upgradeCallCenterRoom()" class="btn btn-purple" style="padding: 5px 9px;">🎧 +Baia Suporte (R$ 550)</button>
+                            </div>
+                        </div>
+
+                        <!-- SETOR 03 -->
+                        <div class="sector-card" style="border-color: rgba(245, 158, 11, 0.5);">
+                            <div class="flex-between">
+                                <div>
+                                    <span style="font-size: 9.5px; font-weight: 800; color: var(--amber-bright); text-transform: uppercase;">SETOR 03 • HARDWARE FTTH</span>
+                                    <div style="font-size: 13px; font-weight: 800; color: #fff;">📦 Almoxarifado & Doca</div>
+                                </div>
+                                <span class="badge mono" style="color: var(--amber-bright);">Estoque Ativo</span>
+                            </div>
+                            <div class="sector-mini-grid">
+                                <div class="sector-mini-item">
+                                    <div style="font-size: 16px;">📠</div>
+                                    <div style="font-weight: 700; font-size: 10.5px; color: #fff;">ONUs & CTOs</div>
+                                    <div id="hq-wh-onu" class="mono" style="font-size: 9.5px; color: var(--emerald-bright);">8 ONU | 2 CTO</div>
+                                </div>
+                                <div class="sector-mini-item">
+                                    <div style="font-size: 16px;">🧶</div>
+                                    <div style="font-weight: 700; font-size: 10.5px; color: #fff;">Bobinas Fibra</div>
+                                    <div id="hq-wh-fiber" class="mono" style="font-size: 9.5px; color: var(--cyan-bright);">4 Bobinas</div>
+                                </div>
+                                <div class="sector-mini-item">
+                                    <div style="font-size: 16px;">🚢</div>
+                                    <div style="font-weight: 700; font-size: 10.5px; color: #fff;">Contêiner</div>
+                                    <div id="hq-wh-ship" class="mono" style="font-size: 9.5px; color: var(--text-muted);">Doca Livre</div>
+                                </div>
+                            </div>
+                            <div class="flex-between">
+                                <span style="font-size: 10.5px; color: var(--text-muted);">Compre CTOs p/ ampliar vagas na rua.</span>
+                                <button onclick="buyStock('cto', 2, 400)" class="btn btn-amber" style="padding: 5px 9px;">📡 +2 CTOs 16p (R$ 400)</button>
+                            </div>
+                        </div>
+
+                        <!-- SETOR 04 -->
+                        <div class="sector-card" style="border-color: rgba(16, 185, 129, 0.5);">
+                            <div class="flex-between">
+                                <div>
+                                    <span style="font-size: 9.5px; font-weight: 800; color: var(--emerald-bright); text-transform: uppercase;">SETOR 04 • FROTA & NAVEGAÇÃO</span>
+                                    <div style="font-size: 13px; font-weight: 800; color: #fff;">🚤 Garagem & Píer Fluvial</div>
+                                </div>
+                                <span class="badge mono" style="color: var(--emerald-bright);">Frota Pronta</span>
+                            </div>
+                            <div class="sector-mini-grid">
+                                <div class="sector-mini-item">
+                                    <div style="font-size: 16px;">🛻</div>
+                                    <div style="font-weight: 700; font-size: 10.5px; color: #fff;">Picape Escada</div>
+                                    <div class="mono" style="font-size: 9.5px; color: var(--emerald-bright);">100% Pronta</div>
+                                </div>
+                                <div class="sector-mini-item">
+                                    <div style="font-size: 16px;">🚤</div>
+                                    <div style="font-weight: 700; font-size: 10.5px; color: #fff;">Lancha Popa</div>
+                                    <div id="hq-boat-cond" class="mono" style="font-size: 9.5px; color: var(--cyan-bright);">Motor: 100%</div>
+                                </div>
+                                <div onclick="switchTab('map')" class="sector-mini-item" style="cursor: pointer;">
+                                    <div style="font-size: 16px;">👷</div>
+                                    <div style="font-weight: 700; font-size: 10.5px; color: #fff;">Técnicos</div>
+                                    <div id="hq-field-techs" class="mono" style="font-size: 9.5px; color: #fff;">1 Técnico(s)</div>
+                                </div>
+                            </div>
+                            <div class="flex-between">
+                                <span style="font-size: 10.5px; color: var(--text-muted);">Revisão preventiva p/ cruzar o rio.</span>
+                                <button onclick="maintainBoat()" class="btn btn-emerald" style="padding: 5px 9px;">🔧 Revisar Popa (1 Peça)</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Central Comparativa de Compras: China vs Nacional -->
+                    <div class="inner-box">
+                        <div class="flex-between" style="border-bottom: 1px solid var(--border-subtle); padding-bottom: 6px; margin-bottom: 8px;">
+                            <span style="font-size: 11.5px; font-weight: 800; color: var(--amber-bright); text-transform: uppercase;">🚢 Central de Compras: Importação Asiática (Shenzhen -50%) vs Distribuidor Nacional</span>
+                            <span class="mono" style="font-size: 10.5px; color: var(--text-muted);">Prazo Navio: 5 dias</span>
+                        </div>
+                        <div class="grid-3">
+                            <div class="sector-card" style="padding: 9px;">
+                                <div>
+                                    <div style="font-weight: 800; color: #fff;">🚢 Contêiner Asiático #1</div>
+                                    <div style="font-size: 11px; color: var(--emerald-bright); font-weight: 700;">+12 ONUs Wi-Fi 6 + 3 CTOs</div>
+                                    <div style="font-size: 10px; color: var(--text-muted);">Chega em 5 dias na Doca</div>
+                                </div>
+                                <button onclick="orderAsianContainer(12, 3, 0, 1100)" class="btn btn-amber" style="width: 100%;">Importar Lote (R$ 1.100)</button>
+                            </div>
+                            <div class="sector-card" style="padding: 9px;">
+                                <div>
+                                    <div style="font-weight: 800; color: #fff;">🚢 Contêiner Asiático #2</div>
+                                    <div style="font-size: 11px; color: var(--cyan-bright); font-weight: 700;">+6 Bobinas Fibra + 4 CTOs</div>
+                                    <div style="font-size: 10px; color: var(--text-muted);">Ideal p/ Expansão de Bairros</div>
+                                </div>
+                                <button onclick="orderAsianContainer(0, 4, 6, 950)" class="btn btn-cyan" style="width: 100%;">Importar Fibra (R$ 950)</button>
+                            </div>
+                            <div class="sector-card" style="padding: 9px;">
+                                <div>
+                                    <div style="font-weight: 800; color: #fff;">⚡ Kit Nacional Expresso</div>
+                                    <div style="font-size: 11px; color: var(--purple-bright); font-weight: 700;">+5 ONUs + 1 CTO + 1 Fibra</div>
+                                    <div style="font-size: 10px; color: var(--text-muted);">Entrega Imediata no Estoque</div>
+                                </div>
+                                <button onclick="buyExpressKit()" class="btn btn-purple" style="width: 100%;">Receber Agora (R$ 920)</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ==============================================================
+                     ABA 2: RACK OLT 42U (64 ➔ 128 ➔ 256 CLIENTES/PON)
+                     ============================================================== -->
+                <div id="tab-noc" class="hidden" style="display: flex; flex-direction: column; gap: 10px; height: 100%; justify-content: space-between;">
+                    <div class="flex-between" style="border-bottom: 1px solid var(--border-subtle); padding-bottom: 8px;">
+                        <div>
+                            <div class="flex-center">
+                                <h2 style="font-size: 14px; font-weight: 800; color: #fff; text-transform: uppercase;">🖥️ Bastidor Telecom 42U — OLT GPON / XGS-PON</h2>
+                                <span id="noc-arch-badge" class="badge mono" style="color: var(--emerald-bright); border-color: var(--emerald);">GPON 1:64 (64 Clientes/PON)</span>
+                            </div>
+                            <p style="font-size: 11.5px; color: var(--text-muted);">Comece com 64 clientes por porta PON e evolua para Splitters 1:128 ou migre para XGS-PON 10G (256 clientes/PON).</p>
+                        </div>
+                        <button onclick="buyPonCard()" class="btn btn-emerald">
+                            + Instalar Placa PON (<span id="btn-pon-cap-label">+64 Vagas</span>) — R$ 1.100
+                        </button>
+                    </div>
+
+                    <!-- Barra de Upgrade de Arquitetura da OLT (64 -> 128 -> 256) -->
+                    <div class="grid-3">
+                        <div class="sector-card" style="border-color: var(--emerald); padding: 9px;">
+                            <div class="flex-between">
+                                <span style="font-weight: 800; color: var(--emerald-bright);">1. GPON Splitter 1:64</span>
+                                <span class="badge mono" style="color: var(--emerald-bright);">64/PON</span>
+                            </div>
+                            <p style="font-size: 11px; color: var(--text-muted);">64 clientes por placa PON (Máx 256 no rack).</p>
+                            <div style="font-size: 11px; font-weight: 700; color: var(--emerald-bright);">✅ Arquitetura Base Ativa</div>
+                        </div>
+
+                        <div class="sector-card" style="border-color: var(--cyan); padding: 9px;">
+                            <div class="flex-between">
+                                <span style="font-weight: 800; color: var(--cyan-bright);">2. GPON High-Density 1:128</span>
+                                <span class="badge mono" style="color: var(--cyan-bright);">128/PON</span>
+                            </div>
+                            <p style="font-size: 11px; color: var(--text-muted);">Dobra cada porta PON para <strong>128 clientes</strong> (Máx 512).</p>
+                            <button id="btn-upg-128" onclick="upgradeOltArchitecture(128)" class="btn btn-cyan" style="width: 100%;">Upgrade 1:128 (R$ 1.800)</button>
+                        </div>
+
+                        <div class="sector-card" style="border-color: var(--amber); padding: 9px;">
+                            <div class="flex-between">
+                                <span style="font-weight: 800; color: var(--amber-bright);">3. Chassis XGS-PON 10G</span>
+                                <span class="badge mono" style="color: var(--amber-bright);">256/PON</span>
+                            </div>
+                            <p style="font-size: 11px; color: var(--text-muted);"><strong>256 clientes/PON</strong> (Máx 1.024) + Bônus de +R$ 6/dia!</p>
+                            <button id="btn-upg-256" onclick="upgradeOltArchitecture(256)" class="btn btn-amber" style="width: 100%;">Migrar XGS-PON (R$ 3.600)</button>
+                        </div>
+                    </div>
+
+                    <!-- Rack 19" + Inspetor Óptico -->
+                    <div style="display: grid; grid-template-columns: 7fr 5fr; gap: 10px; flex: 1;">
+                        <div class="rack-frame" style="justify-content: space-between;">
+                            <div class="flex-between mono" style="font-size: 10.5px; color: var(--text-muted); border-bottom: 1px solid var(--border-subtle); padding-bottom: 4px;">
+                                <span>BASTIDOR 19" • HUAWEI / DATACOM</span>
+                                <span id="olt-chassis-temp" style="color: var(--cyan-bright); font-weight: 700;">🌡️ CHASSIS: 23°C</span>
+                            </div>
+
+                            <div class="rack-unit flex-between">
+                                <div>
+                                    <div class="mono" style="font-weight: 800; color: var(--cyan-bright); font-size: 11.5px;">CCR-2216 CORE BGP ROUTER</div>
+                                    <div style="font-size: 10px; color: var(--text-muted);">ASN 269120 • IX.br / PTT Ativo</div>
+                                </div>
+                                <div class="flex-center">
+                                    <span class="led led-cyan"></span>
+                                    <span class="led led-green"></span>
+                                    <span class="badge mono" style="color: var(--emerald-bright);">QSFP28 100G</span>
+                                </div>
+                            </div>
+
+                            <div class="rack-unit" style="flex: 1; display: flex; flex-direction: column; justify-content: space-between;">
+                                <div class="flex-between" style="border-bottom: 1px solid var(--border-subtle); padding-bottom: 4px;">
+                                    <span id="rack-olt-title" class="mono" style="font-weight: 800; color: #fff; font-size: 11.5px;">OLT GPON MA5800 (64 CLIENTES / PON)</span>
+                                    <span id="rack-total-cap-badge" class="mono" style="font-size: 10.5px; color: var(--emerald-bright);">Cap Total: 64</span>
+                                </div>
+
+                                <div id="olt-slots-container" style="display: flex; flex-direction: column; gap: 6px; margin: 6px 0;"></div>
+
+                                <div class="flex-between" style="font-size: 10px; color: var(--text-muted);">
+                                    <span>🟢 Normal | 🟠 Atenuação | 🔴 LOS</span>
+                                    <span>Clique no slot p/ Check Port</span>
+                                </div>
+                            </div>
+
+                            <div class="rack-unit flex-between">
+                                <div>
+                                    <div class="mono" style="font-weight: 800; color: #a3e635; font-size: 11.5px;">RETIFICADORA -48VDC + LÍTIO</div>
+                                    <div style="font-size: 10px; color: var(--text-muted);">Banco de Baterias Estacionárias</div>
+                                </div>
+                                <span class="badge mono" style="color: #a3e635;">100% ONLINE</span>
+                            </div>
+                        </div>
+
+                        <!-- Optical Power Meter -->
+                        <div class="sector-card">
+                            <div>
+                                <div class="flex-between" style="border-bottom: 1px solid var(--border-subtle); padding-bottom: 6px; margin-bottom: 10px;">
+                                    <span style="font-weight: 800; color: #fff;">🔍 Optical Power Meter</span>
+                                    <span id="insp-slot-id" class="badge mono" style="color: var(--cyan-bright);">SLOT #1</span>
+                                </div>
+                                <div style="display: flex; flex-direction: column; gap: 8px; font-size: 12px;">
+                                    <div class="flex-between"><span style="color: var(--text-muted);">Status Laser:</span><strong id="insp-status" style="color: var(--emerald-bright);">LASER ONLINE</strong></div>
+                                    <div class="flex-between"><span style="color: var(--text-muted);">Sinal Óptico RX:</span><span id="insp-dbm" class="mono" style="color: #fff;">-18.9 dBm (Ideal)</span></div>
+                                    <div class="flex-between"><span style="color: var(--text-muted);">Clientes na PON:</span><strong id="insp-onus" class="mono" style="color: var(--cyan-bright);">12 / 64 ONUs</strong></div>
+                                    <div class="flex-between"><span style="color: var(--text-muted);">Divisor Óptico:</span><span id="insp-splitter" class="mono">Splitter 1:64</span></div>
+                                    <div class="flex-between"><span style="color: var(--text-muted);">Perda de Pacotes:</span><strong id="insp-loss" class="mono" style="color: var(--emerald-bright);">0.0%</strong></div>
+                                </div>
+                            </div>
+
+                            <div style="display: flex; flex-direction: column; gap: 6px; border-top: 1px solid var(--border-subtle); padding-top: 10px;">
+                                <button onclick="runCheckPortDiagnostic()" class="btn btn-cyan" style="width: 100%; padding: 9px;">
+                                    🩺 Check Port & Limpar Atenuação
+                                </button>
+                                <button onclick="resetPonPort()" class="btn" style="width: 100%;">
+                                    🔄 Reiniciar Laser da Porta PON
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ==============================================================
+                     ABA 3: MAPA TÁTICO & GESTÃO DE CTOs (5 ZONAS + RIO TAPAJÓS)
+                     ============================================================== -->
+                <div id="tab-map" class="hidden" style="display: flex; flex-direction: column; gap: 10px; height: 100%; justify-content: space-between;">
+                    <div class="flex-between" style="border-bottom: 1px solid var(--border-subtle); padding-bottom: 8px;">
+                        <div>
+                            <h2 style="font-size: 14px; font-weight: 800; color: #fff; text-transform: uppercase;">🗺️ Topologia FTTH, CTOs & Travessia Fluvial</h2>
+                            <p style="font-size: 11.5px; color: var(--text-muted);">Cada CTO instalada no poste libera <strong>+16 vagas de clientes</strong> no bairro. Expanda para a Vila Ribeirinha e Floresta.</p>
+                        </div>
+                        <button onclick="maintainBoat()" class="btn btn-cyan">
+                            🚤 Revisar Lancha (<span id="map-boat-pct">100%</span>)
+                        </button>
+                    </div>
+
+                    <svg style="width: 100%; height: 190px; background: #050a14; border-radius: 8px; border: 1px solid var(--border-subtle); flex-shrink: 0;" viewBox="0 0 640 200">
+                        <defs>
+                            <pattern id="mapGrid" width="30" height="30" patternUnits="userSpaceOnUse">
+                                <path d="M 30 0 L 0 0 0 30" fill="none" stroke="rgba(56, 189, 248, 0.06)" stroke-width="1"/>
+                            </pattern>
+                        </defs>
+                        <rect width="640" height="200" fill="url(#mapGrid)" />
+
+                        <!-- Rio Tapajós -->
+                        <path d="M 365,0 Q 400,100 345,200 L 440,200 Q 480,100 450,0 Z" fill="#082f49" opacity="0.9" />
+                        <text x="400" y="108" fill="#38bdf8" font-size="8.5" font-weight="bold" opacity="0.8" transform="rotate(-78 400,108)">RIO TAPAJÓS • CABO SUBFLUVIAL</text>
+
+                        <!-- Linhas de Fibra -->
+                        <line id="svg-line-1" x1="80" y1="100" x2="205" y2="45" stroke="#22c55e" stroke-width="3.5" class="fiber-line-active" />
+                        <line id="svg-line-2" x1="80" y1="100" x2="205" y2="155" stroke="#22c55e" stroke-width="3.5" class="fiber-line-active" />
+                        <line id="svg-line-3" x1="205" y1="45" x2="310" y2="100" stroke="#334155" stroke-width="3.5" />
+                        <line id="svg-line-4" x1="310" y1="100" x2="500" y2="55" stroke="#334155" stroke-width="3.5" stroke-dasharray="4,4" />
+                        <line id="svg-line-5" x1="500" y1="55" x2="575" y2="145" stroke="#334155" stroke-width="3.5" stroke-dasharray="4,4" />
+
+                        <!-- Sede NOC -->
+                        <g transform="translate(80,100)" onclick="switchTab('hq')" style="cursor: pointer;">
+                            <circle r="20" fill="#0f172a" stroke="#06b6d4" stroke-width="3" />
+                            <text x="0" y="3" text-anchor="middle" fill="#fff" font-size="9" font-weight="bold">SEDE</text>
+                            <text x="0" y="31" text-anchor="middle" fill="#38bdf8" font-size="8.5" font-weight="bold">NOC OLT</text>
+                        </g>
+
+                        <!-- Zonas 0 a 4 -->
+                        <g transform="translate(205,45)" style="cursor: pointer;" onclick="selectMapZone(0)">
+                            <circle id="svg-node-0" r="16" fill="#1e293b" stroke="#22c55e" stroke-width="3" />
+                            <text x="0" y="3" text-anchor="middle" fill="#fff" font-size="9" font-weight="bold">Z1</text>
+                            <text x="0" y="-20" text-anchor="middle" fill="#e2e8f0" font-size="9.5" font-weight="bold">Centro Comercial</text>
+                        </g>
+                        <g transform="translate(205,155)" style="cursor: pointer;" onclick="selectMapZone(1)">
+                            <circle id="svg-node-1" r="16" fill="#1e293b" stroke="#22c55e" stroke-width="3" />
+                            <text x="0" y="3" text-anchor="middle" fill="#fff" font-size="9" font-weight="bold">Z2</text>
+                            <text x="0" y="28" text-anchor="middle" fill="#e2e8f0" font-size="9.5" font-weight="bold">Bairro Residencial</text>
+                        </g>
+                        <g transform="translate(310,100)" style="cursor: pointer;" onclick="selectMapZone(2)">
+                            <circle id="svg-node-2" r="16" fill="#1e293b" stroke="#475569" stroke-width="3" />
+                            <text x="0" y="3" text-anchor="middle" fill="#fff" font-size="9" font-weight="bold">Z3</text>
+                            <text x="0" y="-20" text-anchor="middle" fill="#94a3b8" font-size="9.5" font-weight="bold">Distrito Industrial</text>
+                        </g>
+                        <g transform="translate(500,55)" style="cursor: pointer;" onclick="selectMapZone(3)">
+                            <circle id="svg-node-3" r="18" fill="#1e293b" stroke="#475569" stroke-width="3" />
+                            <text x="0" y="3" text-anchor="middle" fill="#38bdf8" font-size="9" font-weight="bold">🚤 Z4</text>
+                            <text x="0" y="-22" text-anchor="middle" fill="#38bdf8" font-size="9.5" font-weight="bold">Vila Ribeirinha</text>
+                        </g>
+                        <g transform="translate(575,145)" style="cursor: pointer;" onclick="selectMapZone(4)">
+                            <circle id="svg-node-4" r="18" fill="#1e293b" stroke="#475569" stroke-width="3" />
+                            <text x="0" y="3" text-anchor="middle" fill="#4ade80" font-size="9" font-weight="bold">🌲 Z5</text>
+                            <text x="0" y="29" text-anchor="middle" fill="#4ade80" font-size="9.5" font-weight="bold">Comunidade Floresta</text>
+                        </g>
+                    </svg>
+
+                    <div id="map-zones-grid" class="grid-2" style="overflow-y: auto; flex: 1;"></div>
+                </div>
+
+                <!-- ==============================================================
+                     ABA 4: CALL CENTER & ESTRATÉGIA COMERCIAL DE PLANOS
+                     ============================================================== -->
+                <div id="tab-callcenter" class="hidden" style="display: flex; flex-direction: column; gap: 10px; height: 100%; justify-content: space-between;">
+                    <div class="flex-between" style="border-bottom: 1px solid var(--border-subtle); padding-bottom: 8px;">
+                        <div>
+                            <h2 style="font-size: 14px; font-weight: 800; color: #fff; text-transform: uppercase;">📞 Central de Call Center, Planos & Suporte TR-069</h2>
+                            <p style="font-size: 11.5px; color: var(--text-muted);">Ajuste os preços dos planos FTTH para controlar a velocidade de entrada de clientes e gerencie os chamados.</p>
+                        </div>
+                        <span id="ui-demand-label" class="badge mono" style="color: var(--emerald-bright);">✅ Demanda Equilibrada</span>
+                    </div>
+
+                    <div class="grid-3">
+                        <div id="price-card-popular" onclick="setPricingPolicy('popular')" class="sector-card" style="cursor: pointer;">
+                            <div class="flex-between">
+                                <span style="font-weight: 800; color: var(--emerald-bright);">🔥 Plano Popular</span>
+                                <span class="badge mono">-18% Tarifa</span>
+                            </div>
+                            <p style="font-size: 11px; color: var(--text-muted);">Atrai muitos clientes novos por dia (+40% fila), ideal para encher rápido sua OLT de 64 portas.</p>
+                        </div>
+
+                        <div id="price-card-padrao" onclick="setPricingPolicy('padrao')" class="sector-card" style="cursor: pointer; border-color: var(--cyan);">
+                            <div class="flex-between">
+                                <span style="font-weight: 800; color: var(--cyan-bright);">⚖️ Plano Equilibrado</span>
+                                <span class="badge mono">Padrão</span>
+                            </div>
+                            <p style="font-size: 11px; color: var(--text-muted);">Balanço ideal entre velocidade de adesão de contratos e faturamento diário.</p>
+                        </div>
+
+                        <div id="price-card-premium" onclick="setPricingPolicy('premium')" class="sector-card" style="cursor: pointer;">
+                            <div class="flex-between">
+                                <span style="font-weight: 800; color: var(--amber-bright);">💎 Fibra VIP Gamer</span>
+                                <span class="badge mono">+32% Receita</span>
+                            </div>
+                            <p style="font-size: 11px; color: var(--text-muted);">Maximiza o lucro por porta PON ocupada, mas reduz o fluxo de novos pedidos.</p>
+                        </div>
+                    </div>
+
+                    <div class="inner-box" style="flex: 1; display: flex; flex-direction: column; justify-content: space-between; overflow: hidden;">
+                        <div class="flex-between" style="border-bottom: 1px solid var(--border-subtle); padding-bottom: 6px; margin-bottom: 8px;">
+                            <span style="font-weight: 800; color: var(--purple-bright); font-size: 12px;">🎧 Fila de Chamados Técnicos (Acesso Remoto TR-069)</span>
+                            <span id="cc-agent-power" class="mono" style="font-size: 11px; color: var(--text-muted);">Atendimento Automático: 1/turno</span>
+                        </div>
+                        <div id="tickets-list-container" style="flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 6px;"></div>
+                    </div>
+                </div>
+
+                <!-- ==============================================================
+                     ABA 5: E-MAIL, RH, CURSOS NIC.BR E BANCO / LICENÇAS
+                     ============================================================== -->
+                <div id="tab-email" class="hidden" style="display: flex; flex-direction: column; gap: 10px; height: 100%;">
+                    <div class="flex-between" style="border-bottom: 1px solid var(--border-subtle); padding-bottom: 8px;">
+                        <div class="flex-center" style="gap: 6px;">
+                            <button id="sub-btn-inbox" onclick="switchSubAdmin('inbox')" class="btn btn-cyan">📩 Webmail & Currículos</button>
+                            <button id="sub-btn-training" onclick="switchSubAdmin('training')" class="btn">🎓 Equipe & Cursos NIC.br</button>
+                            <button id="sub-btn-bank" onclick="switchSubAdmin('bank')" class="btn">🏦 Licenças Anatel & Banco</button>
+                        </div>
+                        <button onclick="generateNewCandidateEmail()" class="btn btn-emerald">📢 Anunciar Vaga RH (R$ 50)</button>
+                    </div>
+
+                    <!-- Sub-aba 1: Webmail -->
+                    <div id="sub-panel-inbox" style="display: grid; grid-template-columns: 5fr 7fr; gap: 10px; flex: 1; overflow: hidden;">
+                        <div id="email-list" style="display: flex; flex-direction: column; gap: 6px; overflow-y: auto;"></div>
+                        <div id="email-viewer" class="inner-box" style="display: flex; flex-direction: column; justify-content: space-between;"></div>
+                    </div>
+
+                    <!-- Sub-aba 2: Equipe e Treinamento NIC.br -->
+                    <div id="sub-panel-training" class="hidden" style="display: flex; flex-direction: column; gap: 10px; flex: 1; overflow-y: auto;">
+                        <div class="sector-card flex-between" style="flex-direction: row;">
+                            <div>
+                                <div style="font-weight: 800; font-size: 13px; color: var(--cyan-bright);">🎓 Programa de Capacitação Técnica NIC.br / IX.br</div>
+                                <p style="font-size: 11.5px; color: var(--text-muted);">Treine sua equipe em Boas Práticas de Roteamento BGP e FTTH para economizar banda no Link Dedicado.</p>
+                            </div>
+                            <div class="flex-center" style="gap: 8px;">
+                                <span id="ui-training-lvl" class="badge mono" style="color: var(--emerald-bright);">Certificação Nv. 1</span>
+                                <button onclick="buyStaffTraining()" class="btn btn-emerald">Treinar Equipe (R$ 600)</button>
+                            </div>
+                        </div>
+
+                        <div class="inner-box" style="flex: 1;">
+                            <div style="font-weight: 800; color: #fff; margin-bottom: 8px;">👷 Quadro de Funcionários Ativos (Folha Mensal no Dia 30)</div>
+                            <div id="staff-roster-list" class="grid-2"></div>
+                        </div>
+                    </div>
+
+                    <!-- Sub-aba 3: Licenças Anatel & Banco -->
+                    <div id="sub-panel-bank" class="hidden" style="display: flex; flex-direction: column; gap: 10px; flex: 1; overflow-y: auto;">
+                        <div id="licenses-container" class="grid-3"></div>
+
+                        <div class="sector-card">
+                            <div class="flex-between">
+                                <div>
+                                    <div style="font-weight: 800; color: var(--amber-bright); font-size: 13px;">🏦 Linha de Crédito Empresarial & Proteção BGP</div>
+                                    <p style="font-size: 11px; color: var(--text-muted);">Status Financeiro: <strong id="ui-bgp-finance-status" style="color: var(--emerald-bright);">Faturas em Dia (Sinal Garantido)</strong></p>
+                                </div>
+                                <div style="text-align: right;">
+                                    <div style="font-size: 10px; color: var(--text-muted);">Dívida Bancária:</div>
+                                    <div id="ui-loan-debt" class="mono" style="font-size: 15px; font-weight: 800; color: var(--red-bright);">R$ 0</div>
+                                </div>
+                            </div>
+                            <div class="grid-2" style="margin-top: 6px;">
+                                <button onclick="takeLoan(2000)" class="btn btn-amber">💳 Pegar Empréstimo +R$ 2.000 (Juros 1.5%/dia)</button>
+                                <button onclick="payLoan(1000)" class="btn btn-emerald">🏦 Amortizar Dívida (-R$ 1.000)</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ======================================================================
+             COLUNA DIREITA: PROVISIONAMENTO OLT/CTO + OPERAÇÃO DE CAMPO & SYSLOG
+             ====================================================================== -->
+        <aside class="col-sidebar">
+
+            <!-- PAINEL DIREITO SUPERIOR: PROVISIONAMENTO RÁPIDO -->
+            <div class="hud-panel" style="flex-shrink: 0;">
+                <div class="panel-header">
+                    <span class="panel-title" style="color: var(--emerald-bright);">⚡ Provisionamento OLT/CTO</span>
+                    <span id="ui-queue-badge" class="badge mono" style="color: var(--amber-bright); border-color: var(--amber);">3 na fila</span>
+                </div>
+
+                <div id="provisioning-list" style="display: flex; flex-direction: column; gap: 6px; max-height: 150px; overflow-y: auto; margin-bottom: 10px;"></div>
+
+                <div style="border-top: 1px solid var(--border-subtle); padding-top: 8px; display: flex; flex-direction: column; gap: 6px;">
+                    <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 6px;">
+                        <button onclick="provisionClient()" class="btn btn-emerald" style="font-weight: 800;">
+                            [Autorizar ONU]
+                        </button>
+                        <button onclick="rejectOrder()" class="btn">
+                            [Recusar]
+                        </button>
+                    </div>
+                    <button onclick="cutDefaulter()" class="btn btn-red" style="width: 100%;">
+                        ✂️ Cortar Inadimplente & Recolher ONU (<span id="ui-defaulters">0</span>)
+                    </button>
+                </div>
+            </div>
+
+            <!-- PAINEL DIREITO INFERIOR: OPERAÇÃO DE CAMPO & TERMINAL SYSLOG -->
+            <div class="hud-panel" style="flex: 1; justify-content: space-between;">
+                <div class="panel-header">
+                    <span class="panel-title" style="color: var(--amber-bright);">🚨 Operação de Campo & Logs</span>
+                    <span id="ui-breaks-badge" class="badge" style="color: var(--emerald-bright);">Rede Íntegra</span>
+                </div>
+
+                <div class="grid-2" style="gap: 6px; margin-bottom: 8px; flex-shrink: 0;">
+                    <button onclick="dispatchFieldTech()" class="btn btn-amber" style="width: 100%;">
+                        🔧 Reparar Fibra (R$50)
+                    </button>
+                    <button onclick="resolveSupportTickets()" class="btn btn-purple" style="width: 100%;">
+                        🎧 Limpar Tickets (<span id="ui-support-tickets">1</span>)
+                    </button>
+                </div>
+
+                <div class="flex-between" style="font-size: 10px; color: var(--text-muted); text-transform: uppercase; font-weight: 700; margin-bottom: 4px; flex-shrink: 0;">
+                    <span>Terminal Syslog:</span>
+                    <span class="mono" style="color: var(--cyan-bright);">OLT-CLI v3.1</span>
+                </div>
+
+                <div id="system-logs" class="inner-box mono" style="flex: 1; overflow-y: auto; font-size: 11px; display: flex; flex-direction: column; gap: 4px; background-color: #05080f !important;"></div>
+            </div>
+
+        </aside>
+
+    </main>
+
+</div>
+
+<!-- ==========================================================================
+     MOTOR JAVASCRIPT DO SIMULADOR v3.1 + INTEGRAÇÃO GITHUB / LOCALSTORAGE
+     ========================================================================== -->
+<script>
+    const STORAGE_KEY = 'tapajosnet_isp_sim_v31';
+
+    const state = {
+        mode: 'raiz',
+        speed: 0,
+        eventFrequency: 'calmo',
+        day: 1,
+        month: 1,
+        hour: 8,
+        money: 3500,
+        loanDebt: 0,
+        reputation: 94,
+        clients: 12,
+        peakClients: 12,
+        defaulters: 0,
+        pricingPolicy: 'padrao',
+        acLevel: 1,
+        ccDesks: 1,
+        trainingLevel: 1,
+        rackTemp: 23,
+        generatorMode: 'auto',
+
+        // OLT: 64 clientes/PON inicial -> 128 -> 256 (XGS-PON)
+        ponCapacityPerCard: 64,
+        oltArchName: 'GPON 1:64',
+
+        queue: [
+            { id: 101, name: "Padaria São José", plan: "300 Mega FTTH", zone: "Centro Comercial" },
+            { id: 102, name: "Residência Família Silva", plan: "300 Mega FTTH", zone: "Bairro Residencial" },
+            { id: 103, name: "Mercadinho Tapajós", plan: "500 Mega Pro", zone: "Centro Comercial" }
+        ],
+
+        ticketsList: [
+            { id: 501, client: "Lan House Cyber", issue: "Ajuste de MTU / Rota BGP para Jogos", type: "remote" }
+        ],
+
+        stock: {
+            onu: 8,
+            cto: 2,
+            fiber: 4,
+            parts: 2,
+            diesel: 90
+        },
+
+        pendingDelivery: null,
+        linkCapacityMbps: 1000,
+        powerPct: 100,
+        gridPowerOk: true,
+        weather: 'limpo',
+        nextWeather: 'limpo',
+        boatHealth: 100,
+        selectedPonSlot: 0,
+        licenseLevel: 1,
+
+        ponSlots: [
+            { id: 1, installed: true, clients: 12, capacity: 64, zoneIndex: 0, packetLoss: 0 },
+            { id: 2, installed: false, clients: 0, capacity: 64, zoneIndex: 1, packetLoss: 0 },
+            { id: 3, installed: false, clients: 0, capacity: 64, zoneIndex: 2, packetLoss: 0 },
+            { id: 4, installed: false, clients: 0, capacity: 64, zoneIndex: 3, packetLoss: 0 }
+        ],
+
+        zones: [
+            { id: 0, name: "Centro Comercial", unlocked: true, broken: false, river: false, ctosCount: 1, ctoPorts: 16, clients: 7, dbm: -18.8, reqLicense: 1, unlockCost: 0 },
+            { id: 1, name: "Bairro Residencial", unlocked: true, broken: false, river: false, ctosCount: 1, ctoPorts: 16, clients: 5, dbm: -19.4, reqLicense: 1, unlockCost: 0 },
+            { id: 2, name: "Distrito Industrial", unlocked: false, broken: false, river: false, ctosCount: 1, ctoPorts: 16, clients: 0, dbm: -20.1, reqLicense: 2, unlockCost: 1200 },
+            { id: 3, name: "Vila Ribeirinha (Ilha)", unlocked: false, broken: false, river: true, ctosCount: 1, ctoPorts: 16, clients: 0, dbm: -22.5, reqLicense: 2, unlockCost: 2000 },
+            { id: 4, name: "Comunidade Floresta", unlocked: false, broken: false, river: true, ctosCount: 2, ctoPorts: 32, clients: 0, dbm: -23.8, reqLicense: 3, unlockCost: 2900 }
+        ],
+
+        staff: [
+            { id: 1, name: "Carlos Mendes", role: "tech", salary: 550, traitPos: "Mestre da Fusão", traitNeg: "Exige Café Forte" },
+            { id: 2, name: "Juliana Costa", role: "agent", salary: 450, traitPos: "Especialista TR-069", traitNeg: "Detesta tempestade" }
+        ],
+
+        emails: [
+            {
+                id: 1,
+                sender: "Shenzhen Optical Factory",
+                subject: "🚢 Lote Direto da China: 15 ONUs + 3 CTOs (-50%)",
+                type: "supplier",
+                read: false,
+                body: "Prezado Provedor,\n\nDespachamos contêiner promocional de Shenzhen com equipamentos GPON/XGS-PON:\n• 15x Terminais ONU Dual-Band Wi-Fi 6\n• 3x Caixas CTO 16 Portas conectorizadas\n• 2x Bobinas de Fibra Drop\n\nPreço de Fábrica: R$ 1.150 (Economia de 50%).\nPrazo marítimo/fluvial até sua Doca: 5 dias.",
+                cost: 1150,
+                onuQty: 15,
+                ctoQty: 3,
+                fiberQty: 2,
+                days: 5,
+                acted: false
+            },
+            {
+                id: 2,
+                sender: "Currículo: Roberto 'Betão' Silva",
+                subject: "👷 Técnico Sênior Huawei/Datacom & Piloto Fluvial (R$ 600)",
+                type: "cv",
+                read: false,
+                body: "Olá equipe! Tenho 6 anos de experiência em fusão de fibra óptica, montagem de CTOs e piloto lancha voadeira com motor de popa para atender ilhas e comunidades.\n\n• Habilidade: Mestre da Fusão & Navegador Fluvial.\n• Detalhe: Consome peças originais nas revisões.",
+                candidate: { name: "Roberto 'Betão'", role: "tech", salary: 600, traitPos: "Especialista Huawei & Barco", traitNeg: "Exigente c/ peças" },
+                acted: false
+            },
+            {
+                id: 3,
+                sender: "Hospital Regional",
+                subject: "🏥 Contrato Link Dedicado VIP: Telemedicina",
+                type: "vip",
+                read: false,
+                body: "Diretoria da TapajósNet,\n\nPrecisamos ativar um circuito dedicado prioritário para o Hospital Regional. Ao autorizar (consome 1 ONU do estoque), pagamos R$ 650 de taxa de instalação imediata e elevamos a reputação da sua rede!",
+                bonus: 650,
+                acted: false
+            }
+        ],
+        selectedEmailId: 1
+    };
+
+    let gameTimer = null;
+
+    // ==========================================================================
+    // FUNÇÕES GITHUB SYNC, DOWNLOAD HTML E SAVEGAME
+    // ==========================================================================
+    function toggleGithubModal(show) {
+        const modal = document.getElementById('github-modal');
+        if (show) modal.classList.remove('hidden');
+        else modal.classList.add('hidden');
+    }
+
+    function downloadGameHtml() {
+        const htmlContent = '<!DOCTYPE html>\n' + document.documentElement.outerHTML;
+        const blob = new Blob([htmlContent], { type: 'text/html;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'index.html';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        showToast("⬇️ Arquivo index.html baixado! Pronto para subir no seu GitHub.", "emerald");
+    }
+
+    function copyTextToClipboard(text, successMsg) {
+        const temp = document.createElement('textarea');
+        temp.value = text;
+        document.body.appendChild(temp);
+        temp.select();
+        document.execCommand('copy');
+        document.body.removeChild(temp);
+        showToast(successMsg, "cyan");
+    }
+
+    function copyGitCommands() {
+        const cmds = document.getElementById('git-cli-box').innerText;
+        copyTextToClipboard(cmds, "📋 Comandos Git copiados para a área de transferência!");
+    }
+
+    function saveToLocalStorage(notify = false) {
+        try {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+            if (notify) showToast("💾 Progresso salvo no navegador!", "emerald");
+        } catch (e) {}
+    }
+
+    function exportSaveJson() {
+        copyTextToClipboard(JSON.stringify(state), "📋 Savegame JSON copiado!");
+    }
+
+    function resetSaveData() {
+        try { localStorage.removeItem(STORAGE_KEY); } catch (e) {}
+        location.reload();
+    }
+
+    // ==========================================================================
+    // TOASTS E SYSLOG
+    // ==========================================================================
+    function showToast(msg, type = 'cyan') {
+        const container = document.getElementById('toast-container');
+        const styles = {
+            emerald: 'background: #064e3b; border: 1px solid #10b981; color: #a7f3d0;',
+            red: 'background: #7f1d1d; border: 1px solid #ef4444; color: #fecaca;',
+            amber: 'background: #78350f; border: 1px solid #f59e0b; color: #fde68a;',
+            cyan: 'background: #0f172a; border: 1px solid #06b6d4; color: #a5f3fc;'
+        };
+        const pill = document.createElement('div');
+        pill.style.cssText = `${styles[type] || styles.cyan} padding: 6px 14px; border-radius: 20px; font-size: 11.5px; font-weight: 700; box-shadow: 0 8px 20px rgba(0,0,0,0.6); transition: opacity 0.3s;`;
+        pill.innerText = msg;
+        container.appendChild(pill);
+        setTimeout(() => {
+            pill.style.opacity = '0';
+            setTimeout(() => pill.remove(), 300);
+        }, 3200);
+    }
+
+    function addLog(msg, color = 'slate') {
+        const container = document.getElementById('system-logs');
+        const colors = {
+            emerald: '#34d399',
+            red: '#f87171',
+            amber: '#fbbf24',
+            sky: '#38bdf8',
+            slate: '#cbd5e1'
+        };
+        const timeStr = `D${state.day} ${String(state.hour).padStart(2, '0')}h`;
+        const div = document.createElement('div');
+        div.style.color = colors[color] || colors.slate;
+        div.innerText = `[${timeStr}] ${msg}`;
+        container.prepend(div);
+    }
+
+    // ==========================================================================
+    // CONTROLE DE INÍCIO, MODO E VELOCIDADE (8s/dia em 1x)
+    // ==========================================================================
+    function setEventFrequency(freq) {
+        state.eventFrequency = freq;
+        document.getElementById('start-pacing-select').value = freq;
+        document.getElementById('header-pacing-select').value = freq;
+        const labels = { calmo: 'Calmo / Realista', normal: 'Moderado', intenso: 'Intenso' };
+        addLog(`⏱️ Ritmo de eventos ajustado para: ${labels[freq]}.`, 'sky');
+    }
+
+    function startGame(chosenMode) {
+        state.mode = chosenMode;
+        document.getElementById('start-modal').classList.add('hidden');
+        updateModeButtonUI();
+        addLog(`NOC v3.1 iniciado! OLT configurada com 64 clientes/PON (Splitter 1:64).`, 'emerald');
+        showToast(`🚀 OLT 64 Clientes/PON Ativa! Modo ${chosenMode === 'raiz' ? 'Raiz' : 'Investidor'}.`, 'emerald');
+        renderAll();
+        setSpeed(1);
+    }
+
+    function toggleGameMode() {
+        state.mode = state.mode === 'raiz' ? 'investidor' : 'raiz';
+        updateModeButtonUI();
+        showToast(`Modo alterado para: ${state.mode === 'raiz' ? '🛠️ Provedor Raiz' : '👔 Investidor Auto'}`, 'cyan');
+    }
+
+    function updateModeButtonUI() {
+        const btn = document.getElementById('btn-toggle-mode');
+        if (state.mode === 'raiz') {
+            btn.className = "btn btn-emerald";
+            btn.innerText = "🛠️ Modo: Raiz";
+        } else {
+            btn.className = "btn btn-cyan";
+            btn.innerText = "👔 Modo: Investidor";
+        }
+    }
+
+    function setSpeed(newSpeed) {
+        state.speed = newSpeed;
+        if (gameTimer) {
+            clearInterval(gameTimer);
+            gameTimer = null;
+        }
+
+        const btnPause = document.getElementById('btn-pause');
+        const btn1 = document.getElementById('btn-speed-1');
+        const btn2 = document.getElementById('btn-speed-2');
+        const btn3 = document.getElementById('btn-speed-3');
+        const banner = document.getElementById('pause-banner');
+
+        btnPause.className = "btn";
+        [btn1, btn2, btn3].forEach(b => b.className = "btn mono");
+
+        if (newSpeed === 0) {
+            btnPause.className = "btn btn-amber";
+            btnPause.innerText = "▶️ CONTINUAR";
+            banner.classList.remove('hidden');
+        } else {
+            btnPause.innerText = "⏸️ PAUSAR";
+            banner.classList.add('hidden');
+            if (newSpeed === 1) {
+                btn1.className = "btn btn-emerald mono";
+                gameTimer = setInterval(gameTick, 1333);
+            } else if (newSpeed === 2) {
+                btn2.className = "btn btn-emerald mono";
+                gameTimer = setInterval(gameTick, 666);
+            } else if (newSpeed === 3) {
+                btn3.className = "btn btn-cyan mono";
+                gameTimer = setInterval(gameTick, 333);
+            }
+        }
+    }
+
+    window.addEventListener('keydown', (e) => {
+        if (e.code === 'Space' && document.getElementById('start-modal').classList.contains('hidden')) {
+            e.preventDefault();
+            setSpeed(state.speed === 0 ? 1 : 0);
+        }
+    });
+
+    // ==========================================================================
+    // LOOP DE SIMULAÇÃO
+    // ==========================================================================
+    function gameTick() {
+        state.hour += 4;
+        handleHourlyEvents();
+
+        if (state.hour >= 24) {
+            state.hour = 0;
+            state.day++;
+            handleDailyEvents();
+
+            if (state.day > 30) {
+                state.day = 1;
+                state.month++;
+                handleMonthlyPayroll();
+            }
+            saveToLocalStorage(false);
+        }
+
+        if (state.mode === 'investidor') {
+            runInvestorAutomation();
+        }
+
+        checkGameOver();
+        renderAll();
+    }
+
+    function handleHourlyEvents() {
+        const installedCards = state.ponSlots.filter(s => s.installed).length;
+        const archHeat = state.ponCapacityPerCard === 256 ? 4 : (state.ponCapacityPerCard === 128 ? 2 : 0);
+        const ambientHeat = state.weather === 'limpo' ? 25 : 22;
+        const targetTemp = ambientHeat + (installedCards * 4) + archHeat - (state.acLevel * 6);
+        state.rackTemp = Math.max(18, targetTemp);
+
+        if (!state.gridPowerOk) {
+            const useGen = (state.generatorMode === 'auto' || state.generatorMode === 'on') && state.stock.diesel >= 4;
+            if (useGen) {
+                state.stock.diesel = Math.max(0, state.stock.diesel - 4);
+                state.powerPct = Math.min(100, state.powerPct + 12);
+            } else {
+                state.powerPct = Math.max(0, state.powerPct - 12);
+                if (state.powerPct === 0) {
+                    state.reputation = Math.max(5, state.reputation - 3);
+                    addLog("🚨 BLACKOUT NO NOC! Nobreak e Diesel esgotados!", "red");
+                }
+            }
+        } else {
+            state.powerPct = Math.min(100, state.powerPct + 25);
+        }
+
+        const agentsCount = state.staff.filter(s => s.role === 'agent').length;
+        const resolveCap = Math.min(agentsCount, state.ccDesks);
+        if (state.ticketsList.length > 0 && resolveCap > 0 && state.hour % 8 === 0) {
+            state.ticketsList.splice(0, resolveCap);
+        }
+    }
+
+    function handleDailyEvents() {
+        const freqMult = state.eventFrequency === 'calmo' ? 0.45 : (state.eventFrequency === 'normal' ? 0.85 : 1.35);
+
+        const brokenClients = state.zones.filter(z => z.broken).reduce((acc, z) => acc + z.clients, 0);
+        const payingClients = Math.max(0, state.clients - brokenClients - state.defaulters);
+        state.money += payingClients * getClientDailyRate();
+
+        if (state.loanDebt > 0) {
+            state.money -= Math.ceil(state.loanDebt * 0.015);
+        }
+
+        if (state.pendingDelivery) {
+            state.pendingDelivery.daysLeft--;
+            if (state.pendingDelivery.daysLeft <= 0) {
+                state.stock.onu += state.pendingDelivery.onu;
+                state.stock.cto += state.pendingDelivery.cto;
+                state.stock.fiber += state.pendingDelivery.fiber;
+                addLog(`🚢 Contêiner Asiático atracou na Doca! (+${state.pendingDelivery.onu} ONUs, +${state.pendingDelivery.cto} CTOs, +${state.pendingDelivery.fiber} Fibras)`, "emerald");
+                showToast("🚢 Contêiner Asiático descarregado no Almoxarifado!", "emerald");
+                state.pendingDelivery = null;
+            }
+        }
+
+        const demandMod = state.pricingPolicy === 'popular' ? 1.4 : (state.pricingPolicy === 'premium' ? 0.75 : 1.05);
+        if (Math.random() < (state.reputation / 105) * demandMod && state.queue.length < 10) {
+            const unlockedZones = state.zones.filter(z => z.unlocked);
+            const randomZone = unlockedZones[Math.floor(Math.random() * unlockedZones.length)];
+            const names = ["Padaria Pão Dourado", "Família Oliveira", "Supermercado Tapajós", "Farmácia Santa Clara", "Clínica Vida", "Hotel Mirante do Rio", "Restaurante Amazônia", "Agropecuária Norte", "Escritório Contábil", "Colégio Dom Bosco"];
+            const plans = state.ponCapacityPerCard === 256 ? ["1 Gbps XGS-PON", "2 Gbps VIP"] : (state.licenseLevel >= 2 ? ["500 Mega FTTH", "600 Mega Gamer"] : ["300 Mega FTTH", "400 Mega Fibra"]);
+            state.queue.push({
+                id: Math.floor(100 + Math.random() * 900),
+                name: names[Math.floor(Math.random() * names.length)],
+                plan: plans[Math.floor(Math.random() * plans.length)],
+                zone: randomZone.name
+            });
+        }
+
+        state.weather = state.nextWeather;
+        const rollNext = Math.random();
+        if (rollNext < 0.72) state.nextWeather = 'limpo';
+        else if (rollNext < 0.92) state.nextWeather = 'chuva';
+        else {
+            state.nextWeather = 'tempestade';
+            addLog("📡 METEOROLOGIA: Alerta de Tempestade Amazônica prevista para amanhã!", "amber");
+        }
+
+        if (state.weather === 'tempestade' && Math.random() < 0.30 * freqMult) {
+            state.gridPowerOk = false;
+            addLog("⚡ Queda de energia externa! NOC operando no Gerador/Nobreak.", "amber");
+        } else {
+            state.gridPowerOk = true;
+        }
+
+        const baseBreakChance = state.weather === 'tempestade' ? 0.14 : (state.weather === 'chuva' ? 0.06 : 0.025);
+        if (Math.random() < baseBreakChance * freqMult) {
+            const activeZones = state.zones.filter(z => z.unlocked && !z.broken);
+            if (activeZones.length > 0) {
+                const targetZone = activeZones[Math.floor(Math.random() * activeZones.length)];
+                targetZone.broken = true;
+                pushNewTicket(`LOS Crítico em ${targetZone.name}`, "Rompimento de Fibra Óptica no Poste");
+                addLog(`🔴 ALERTA LOS: Fibra rompida em [${targetZone.name}]!`, "red");
+                showToast(`🚨 Rompimento de Fibra em ${targetZone.name}!`, "red");
+            }
+        }
+
+        if (Math.random() < 0.08 * freqMult) {
+            const activeSlots = state.ponSlots.filter(s => s.installed && s.clients > 0);
+            if (activeSlots.length > 0) {
+                const sl = activeSlots[Math.floor(Math.random() * activeSlots.length)];
+                sl.packetLoss = Math.min(12, sl.packetLoss + 4);
+            }
+        }
+
+        if (Math.random() < 0.16 * freqMult && state.ticketsList.length < 6) {
+            const issues = ["Configuração de Wi-Fi Dual Band", "Troca de conector APC atenuado", "Dúvida sobre upgrade de plano", "Queda de sessão PPPoE"];
+            pushNewTicket(`Assinante #${Math.floor(100 + Math.random() * 899)}`, issues[Math.floor(Math.random() * issues.length)]);
+        }
+
+        if (state.clients > 15 && Math.random() < 0.08 * freqMult) state.defaulters++;
+
+        const usedMbps = getUsedBandwidthMbps();
+        const activeBreaks = state.zones.filter(z => z.broken).length;
+        if (usedMbps > state.linkCapacityMbps || activeBreaks > 0 || state.ticketsList.length > 5 || state.rackTemp > 42) {
+            state.reputation = Math.max(15, state.reputation - 2);
+        } else {
+            state.reputation = Math.min(100, state.reputation + 1);
+        }
+    }
+
+    function handleMonthlyPayroll() {
+        const staffCost = state.staff.reduce((acc, s) => acc + s.salary, 0);
+        const linkCost = Math.round((state.linkCapacityMbps / 1000) * 400);
+        const totalBill = staffCost + linkCost;
+        state.money -= totalBill;
+        addLog(`💸 FECHAMENTO MENSAL (Dia 30): Folha (R$${staffCost}) + Link Dedicado (R$${linkCost}) pagos.`, "amber");
+        showToast(`💸 Folha e Link Dedicado debitados (-R$ ${totalBill})`, "amber");
+    }
+
+    function runInvestorAutomation() {
+        if (state.queue.length > 0 && state.stock.onu > 0 && state.clients < getTotalOltCapacity() && state.clients < getTotalCtoCapacity()) {
+            provisionClient(true);
+        }
+        if (state.zones.some(z => z.broken) && state.money >= 50) {
+            dispatchFieldTech(true);
+        }
+    }
+
+    // ==========================================================================
+    // MÉTODOS DE CAPACIDADE E OPERAÇÃO
+    // ==========================================================================
+    function getClientDailyRate() {
+        const base = state.licenseLevel === 1 ? 22 : (state.licenseLevel === 2 ? 30 : 40);
+        const xgsBonus = state.ponCapacityPerCard === 256 ? 6 : (state.ponCapacityPerCard === 128 ? 2 : 0);
+        const mult = state.pricingPolicy === 'popular' ? 0.82 : (state.pricingPolicy === 'premium' ? 1.32 : 1.0);
+        return Math.round((base + xgsBonus) * mult);
+    }
+
+    function getTotalOltCapacity() {
+        return state.ponSlots.filter(s => s.installed).reduce((acc, s) => acc + s.capacity, 0);
+    }
+
+    function getTotalCtoCapacity() {
+        return state.zones.filter(z => z.unlocked).reduce((acc, z) => acc + z.ctoPorts, 0);
+    }
+
+    function getUsedBandwidthMbps() {
+        const baseMbps = state.ponCapacityPerCard === 256 ? 35 : 25;
+        const efficiency = Math.max(0.68, 1 - (state.trainingLevel - 1) * 0.08);
+        return Math.round(state.clients * baseMbps * efficiency);
+    }
+
+    function upgradeOltArchitecture(targetPerPon) {
+        if (targetPerPon === 128) {
+            if (state.ponCapacityPerCard >= 128) {
+                showToast("Sua OLT já opera em 128+ clientes por PON!", "amber");
+                return;
+            }
+            if (state.money < 1800) {
+                showToast("❌ Saldo insuficiente (R$ 1.800)!", "red");
+                return;
+            }
+            state.money -= 1800;
+            state.ponCapacityPerCard = 128;
+            state.oltArchName = 'GPON 1:128';
+            state.ponSlots.forEach(s => s.capacity = 128);
+            addLog("🚀 UPGRADE DE OLT: Splitters 1:128 ativados! Cada porta PON agora suporta 128 clientes.", "emerald");
+            showToast("🚀 OLT atualizada para 128 clientes por PON!", "emerald");
+        } else if (targetPerPon === 256) {
+            if (state.ponCapacityPerCard >= 256) {
+                showToast("Seu bastidor já é XGS-PON 10G!", "amber");
+                return;
+            }
+            if (state.money < 3600) {
+                showToast("❌ Saldo insuficiente (R$ 3.600)!", "red");
+                return;
+            }
+            state.money -= 3600;
+            state.ponCapacityPerCard = 256;
+            state.oltArchName = 'XGS-PON 10G';
+            state.ponSlots.forEach(s => s.capacity = 256);
+            state.reputation = Math.min(100, state.reputation + 5);
+            addLog("💎 MIGRAÇÃO XGS-PON 10G CONCLUÍDA! Capacidade subiu para 256 clientes/PON.", "emerald");
+            showToast("💎 Chassis XGS-PON 10G (256 Clientes/PON) Ativado!", "emerald");
+        }
+        renderAll();
+    }
+
+    function buyPonCard() {
+        const nextSlot = state.ponSlots.find(s => !s.installed);
+        if (!nextSlot) {
+            showToast("O Chassis OLT já está com os 4 Slots PON ativos!", "amber");
+            return;
+        }
+        if (state.money < 1100) {
+            showToast("❌ Saldo insuficiente (R$ 1.100)!", "red");
+            return;
+        }
+        state.money -= 1100;
+        nextSlot.installed = true;
+        nextSlot.capacity = state.ponCapacityPerCard;
+        addLog(`🖥️ Nova Placa PON instalada no Slot #${nextSlot.id} (+${state.ponCapacityPerCard} vagas)!`, "emerald");
+        showToast(`🖥️ Slot PON #${nextSlot.id} ativado (+${state.ponCapacityPerCard} clientes)!`, "emerald");
+        renderAll();
+    }
+
+    function provisionClient(isAuto = false) {
+        if (state.queue.length === 0) {
+            if (!isAuto) addLog("Nenhum pedido aguardando na fila.", "slate");
+            return;
+        }
+        if (state.stock.onu <= 0) {
+            if (!isAuto) showToast("❌ Sem ONUs no Almoxarifado! Compre ou importe.", "red");
+            return;
+        }
+        if (state.clients >= getTotalOltCapacity()) {
+            if (!isAuto) showToast("❌ Portas PON da OLT lotadas! Faça upgrade na aba Rack OLT.", "red");
+            return;
+        }
+
+        const order = state.queue[0];
+        let targetZone = state.zones.find(z => z.name === order.zone && z.unlocked);
+        if (!targetZone) targetZone = state.zones.find(z => z.unlocked && z.clients < z.ctoPorts) || state.zones[0];
+
+        if (targetZone.clients >= targetZone.ctoPorts) {
+            if (!isAuto) showToast(`❌ CTOs lotadas em ${targetZone.name} (${targetZone.clients}/${targetZone.ctoPorts})! Instale +CTO na aba Mapa.`, "amber");
+            return;
+        }
+
+        const slot = state.ponSlots.find(s => s.installed && s.clients < s.capacity);
+        if (!slot) return;
+
+        state.queue.shift();
+        slot.clients++;
+        targetZone.clients++;
+        state.clients++;
+        if (state.clients > state.peakClients) state.peakClients = state.clients;
+        state.stock.onu--;
+        state.money += 120;
+
+        addLog(`✅ ONU Autorizada: [${order.name}] em ${targetZone.name} (Slot PON #${slot.id} • +R$120).`, "emerald");
+        renderAll();
+    }
+
+    function rejectOrder() {
+        if (state.queue.length === 0) return;
+        const removed = state.queue.shift();
+        addLog(`Pedido de [${removed.name}] recusado.`, "slate");
+        renderAll();
+    }
+
+    function cutDefaulter() {
+        if (state.defaulters <= 0) {
+            addLog("Nenhum cliente inadimplente no momento.", "slate");
+            return;
+        }
+        state.defaulters--;
+        if (state.clients > 0) {
+            state.clients--;
+            const slot = state.ponSlots.find(s => s.installed && s.clients > 0);
+            if (slot) slot.clients--;
+            const zone = state.zones.find(z => z.clients > 0);
+            if (zone) zone.clients--;
+        }
+        state.stock.onu++;
+        addLog("✂️ Inadimplente desconectado e 1 ONU recolhida ao estoque.", "amber");
+        renderAll();
+    }
+
+    function buyStock(item, qty, cost) {
+        if (state.money < cost) {
+            showToast("❌ Saldo insuficiente em caixa!", "red");
+            return;
+        }
+        state.money -= cost;
+        state.stock[item] += qty;
+        const labels = { onu: 'ONU(s)', cto: 'Caixa(s) CTO 16p', fiber: 'Bobina(s) Fibra', parts: 'Kit Motor de Popa', diesel: 'Litros de Diesel' };
+        addLog(`📦 Compra Expressa entregue: +${qty} ${labels[item]}.`, "sky");
+        renderAll();
+    }
+
+    function orderAsianContainer(onuQty, ctoQty, fiberQty, cost) {
+        if (state.pendingDelivery) {
+            showToast("🚢 Já existe um contêiner asiático em trânsito!", "amber");
+            return;
+        }
+        if (state.money < cost) {
+            showToast(`❌ Saldo insuficiente (R$ ${cost})!`, "red");
+            return;
+        }
+        state.money -= cost;
+        state.pendingDelivery = { totalDays: 5, daysLeft: 5, onu: onuQty, cto: ctoQty, fiber: fiberQty };
+        addLog(`🚢 Contêiner Asiático despachado de Shenzhen! Chegada em 5 dias.`, "emerald");
+        showToast("🚢 Contêiner despachado de Shenzhen (5 dias)!", "emerald");
+        renderAll();
+    }
+
+    function buyExpressKit() {
+        if (state.money < 920) {
+            showToast("❌ Saldo insuficiente (R$ 920)!", "red");
+            return;
+        }
+        state.money -= 920;
+        state.stock.onu += 5;
+        state.stock.cto += 1;
+        state.stock.fiber += 1;
+        addLog("⚡ Kit Expresso Nacional entregue na hora (+5 ONUs, +1 CTO, +1 Fibra)!", "emerald");
+        showToast("⚡ Kit Expresso adicionado ao Almoxarifado!", "cyan");
+        renderAll();
+    }
+
+    function pushNewTicket(clientName, issueText) {
+        state.ticketsList.push({ id: Math.floor(1000 + Math.random() * 9000), client: clientName, issue: issueText });
+    }
+
+    function toggleGenerator() {
+        const modes = ['auto', 'on', 'off'];
+        state.generatorMode = modes[(modes.indexOf(state.generatorMode) + 1) % modes.length];
+        addLog(`⚙️ Chave do Gerador alterada para: ${state.generatorMode.toUpperCase()}.`, "sky");
+        renderAll();
+    }
+
+    function upgradeAcUnit() {
+        if (state.money < 650) {
+            showToast("❌ Saldo insuficiente (R$ 650)!", "red");
+            return;
+        }
+        state.money -= 650;
+        state.acLevel++;
+        state.rackTemp = Math.max(18, state.rackTemp - 5);
+        addLog(`❄️ Climatização do NOC expandida para Nível ${state.acLevel}!`, "sky");
+        showToast(`❄️ Ar-Condicionado Nível ${state.acLevel} instalado!`, "cyan");
+        renderAll();
+    }
+
+    function upgradeCallCenterRoom() {
+        if (state.money < 550) {
+            showToast("❌ Saldo insuficiente (R$ 550)!", "red");
+            return;
+        }
+        state.money -= 550;
+        state.ccDesks++;
+        state.reputation = Math.min(100, state.reputation + 2);
+        addLog(`🎧 Nova baia de Call Center instalada (${state.ccDesks} baias ativas)!`, "emerald");
+        renderAll();
+    }
+
+    function runCheckPortDiagnostic() {
+        const slot = state.ponSlots[state.selectedPonSlot];
+        if (!slot || !slot.installed) return;
+        slot.packetLoss = 0;
+        state.reputation = Math.min(100, state.reputation + 1);
+        addLog(`🩺 Check Port concluído no Slot #${slot.id}: Atenuação corrigida!`, "emerald");
+        showToast(`🩺 Porta PON #${slot.id} recalibrada (-18.9 dBm)!`, "emerald");
+        renderAll();
+    }
+
+    function resetPonPort() {
+        const slot = state.ponSlots[state.selectedPonSlot];
+        if (!slot || !slot.installed) return;
+        slot.packetLoss = 0;
+        addLog(`🔄 Laser óptico do Slot #${slot.id} reiniciado.`, "sky");
+        renderAll();
+    }
+
+    function upgradeLink() {
+        if (state.money < 750) {
+            showToast("❌ Saldo insuficiente (R$ 750)!", "red");
+            return;
+        }
+        state.money -= 750;
+        state.linkCapacityMbps += 1000;
+        addLog(`🚀 Upgrade de Link Dedicado BGP: Capacidade subiu para ${state.linkCapacityMbps} Mbps!`, "emerald");
+        showToast(`🚀 Link BGP ampliado para ${state.linkCapacityMbps / 1000} Gbps!`, "emerald");
+        renderAll();
+    }
+
+    function dispatchFieldTech(isAuto = false) {
+        const brokenZone = state.zones.find(z => z.broken);
+        if (!brokenZone) {
+            if (!isAuto) addLog("Nenhuma rota rompida no Mapa Tático.", "slate");
+            return;
+        }
+        const techs = state.staff.filter(s => s.role === 'tech').length;
+        if (techs <= 0) {
+            showToast("❌ Sem técnicos na equipe! Contrate no RH.", "red");
+            return;
+        }
+        if (state.money < 50) {
+            showToast("❌ Sem saldo para combustível (R$ 50)!", "red");
+            return;
+        }
+        if (brokenZone.river && state.boatHealth < 25) {
+            showToast("🚤 Motor de popa em pane! Revise o barco na Sede.", "red");
+            return;
+        }
+
+        state.money -= 50;
+        brokenZone.broken = false;
+        if (brokenZone.river) {
+            state.boatHealth = Math.max(0, state.boatHealth - 25);
+            addLog(`🚤 Lancha cruzou o Rio Tapajós e refez a fusão óptica em [${brokenZone.name}]!`, "emerald");
+        } else {
+            addLog(`🛻 Picape reparou o rompimento de fibra em [${brokenZone.name}]!`, "emerald");
+        }
+        showToast(`✅ Rede restaurada em ${brokenZone.name}!`, "emerald");
+        renderAll();
+    }
+
+    function maintainBoat() {
+        if (state.stock.parts <= 0) {
+            showToast("❌ Sem Kit de Peças de Popa no estoque!", "red");
+            return;
+        }
+        state.stock.parts--;
+        state.boatHealth = 100;
+        addLog("🚤 Motor de popa revisado no Píer Fluvial (100%).", "sky");
+        showToast("🚤 Motor de Popa 100% revisado!", "cyan");
+        renderAll();
+    }
+
+    function setPricingPolicy(policy) {
+        state.pricingPolicy = policy;
+        addLog(`🏷️ Política comercial alterada para: Plano ${policy.toUpperCase()}.`, "sky");
+        renderAll();
+    }
+
+    function resolveSupportTickets() {
+        if (state.ticketsList.length === 0) {
+            addLog("Fila de chamados já está limpa!", "slate");
+            return;
+        }
+        state.ticketsList.splice(0, 3);
+        state.reputation = Math.min(100, state.reputation + 1);
+        addLog("🎧 Chamados técnicos solucionados via TR-069!", "emerald");
+        renderAll();
+    }
+
+    function resolveSingleTicket(id) {
+        state.ticketsList = state.ticketsList.filter(t => t.id !== id);
+        state.reputation = Math.min(100, state.reputation + 1);
+        addLog(`🎧 Chamado #${id} encerrado.`, "emerald");
+        renderAll();
+    }
+
+    function unlockZone(zoneId) {
+        const z = state.zones.find(item => item.id === zoneId);
+        if (!z || z.unlocked) return;
+
+        if (state.licenseLevel < z.reqLicense) {
+            showToast(`❌ Exige Licença Anatel Nível ${z.reqLicense}!`, "red");
+            return;
+        }
+        if (state.stock.fiber < 1 || state.stock.cto < 1) {
+            showToast("❌ Requer 1 Bobina de Fibra + 1 Caixa CTO no estoque!", "red");
+            return;
+        }
+        if (state.money < z.unlockCost) {
+            showToast(`❌ Saldo insuficiente (R$ ${z.unlockCost})!`, "red");
+            return;
+        }
+
+        state.money -= z.unlockCost;
+        state.stock.fiber--;
+        state.stock.cto--;
+        z.unlocked = true;
+        addLog(`🌐 Backbone óptico e CTO inaugurados em [${z.name}]!`, "emerald");
+        showToast(`🌐 ${z.name} conectado à rede FTTH!`, "emerald");
+        renderAll();
+    }
+
+    function expandZoneCto(zoneId) {
+        const z = state.zones.find(item => item.id === zoneId);
+        if (!z || !z.unlocked) return;
+
+        if (state.stock.cto > 0) {
+            state.stock.cto--;
+            z.ctosCount++;
+            z.ctoPorts += 16;
+            addLog(`📡 Caixa CTO instalada no poste em [${z.name}] (+16 vagas).`, "emerald");
+            showToast(`📡 +16 vagas de CTO abertas em ${z.name}!`, "emerald");
+        } else {
+            if (state.money < 260) {
+                showToast("❌ Sem CTO no estoque e saldo insuficiente (R$ 260)!", "red");
+                return;
+            }
+            state.money -= 260;
+            z.ctosCount++;
+            z.ctoPorts += 16;
+            addLog(`📡 Nova CTO comprada e instalada em [${z.name}] (+16 vagas).`, "sky");
+            showToast(`📡 +16 vagas de CTO abertas em ${z.name}!`, "cyan");
+        }
+        renderAll();
+    }
+
+    function selectPonSlot(idx) {
+        state.selectedPonSlot = idx;
+        renderNocTab();
+    }
+
+    function selectMapZone(idx) {
+        const z = state.zones[idx];
+        if (z.broken) dispatchFieldTech();
+        else if (!z.unlocked) unlockZone(idx);
+        else expandZoneCto(idx);
+    }
+
+    function switchSubAdmin(sub) {
+        ['inbox', 'training', 'bank'].forEach(s => {
+            document.getElementById(`sub-panel-${s}`).classList.add('hidden');
+            document.getElementById(`sub-btn-${s}`).className = "btn";
+        });
+        document.getElementById(`sub-panel-${sub}`).classList.remove('hidden');
+        document.getElementById(`sub-btn-${sub}`).className = "btn btn-cyan";
+        renderAll();
+    }
+
+    function selectEmail(id) {
+        state.selectedEmailId = id;
+        const mail = state.emails.find(e => e.id === id);
+        if (mail) mail.read = true;
+        renderEmailTab();
+        updateTopBadges();
+    }
+
+    function actOnEmail(id) {
+        const mail = state.emails.find(e => e.id === id);
+        if (!mail || mail.acted) return;
+
+        if (mail.type === 'supplier') {
+            if (state.pendingDelivery) {
+                showToast("🚢 Já há um contêiner em trânsito!", "amber");
+                return;
+            }
+            if (state.money < mail.cost) {
+                showToast("❌ Saldo insuficiente para importar lote!", "red");
+                return;
+            }
+            state.money -= mail.cost;
+            state.pendingDelivery = { totalDays: mail.days, daysLeft: mail.days, onu: mail.onuQty, cto: mail.ctoQty || 2, fiber: mail.fiberQty };
+            mail.acted = true;
+            addLog(`🚢 Importação de Shenzhen confirmada! Chegada em ${mail.days} dias.`, "emerald");
+            showToast("🚢 Lote Asiático contratado via Webmail!", "emerald");
+        } else if (mail.type === 'cv') {
+            state.staff.push({
+                id: Date.now(),
+                name: mail.candidate.name,
+                role: mail.candidate.role,
+                salary: mail.candidate.salary,
+                traitPos: mail.candidate.traitPos,
+                traitNeg: mail.candidate.traitNeg
+            });
+            mail.acted = true;
+            addLog(`👷 Contratado: ${mail.candidate.name} (R$${mail.candidate.salary}/mês).`, "emerald");
+            showToast(`👷 ${mail.candidate.name} entrou para a equipe!`, "emerald");
+        } else if (mail.type === 'vip') {
+            if (state.stock.onu < 1) {
+                showToast("❌ Requer 1 ONU no estoque!", "red");
+                return;
+            }
+            state.stock.onu--;
+            state.money += mail.bonus;
+            state.reputation = Math.min(100, state.reputation + 5);
+            mail.acted = true;
+            addLog(`🏥 Link Dedicado VIP ativado! Bônus +R$ ${mail.bonus} em caixa.`, "emerald");
+            showToast(`🏥 Contrato VIP ativado (+R$ ${mail.bonus})!`, "emerald");
+        }
+        renderAll();
+    }
+
+    function generateNewCandidateEmail() {
+        if (state.money < 50) {
+            showToast("❌ Saldo insuficiente (R$ 50)!", "red");
+            return;
+        }
+        state.money -= 50;
+        const pool = [
+            { name: "Lucas Ferreira", role: "tech", salary: 520, traitPos: "Mestre da Fusão", traitNeg: "Lento na chuva" },
+            { name: "Amanda Ribeiro", role: "agent", salary: 440, traitPos: "Retenção de Clientes", traitNeg: "Pede café expresso" },
+            { name: "Marcos 'BGP'", role: "tech", salary: 680, traitPos: "Especialista Huawei/Datacom", traitNeg: "Salário Sênior" },
+            { name: "Tiago Ribeirinho", role: "tech", salary: 560, traitPos: "Navegador Fluvial", traitNeg: "Gambiarreiro no UTP" }
+        ];
+        const pick = pool[Math.floor(Math.random() * pool.length)];
+        const newId = Date.now();
+        state.emails.unshift({
+            id: newId,
+            sender: `Currículo: ${pick.name}`,
+            subject: `${pick.role === 'tech' ? '👷 Técnico FTTH' : '🎧 Analista de Suporte'} (R$ ${pick.salary})`,
+            type: "cv",
+            read: false,
+            body: `Prezados,\nEncaminho meu currículo para avaliação do RH.\n\n• Cargo: ${pick.role === 'tech' ? 'Técnico de Fibra / Campo' : 'Operador de Call Center'}\n• Ponto Forte: ${pick.traitPos}\n• Observação: ${pick.traitNeg}\n• Pretensão Salarial: R$ ${pick.salary}/mês.`,
+            candidate: pick,
+            acted: false
+        });
+        state.selectedEmailId = newId;
+        showToast("📢 Novo currículo recebido no Webmail!", "cyan");
+        renderAll();
+    }
+
+    function buyStaffTraining() {
+        if (state.money < 600) {
+            showToast("❌ Saldo insuficiente (R$ 600)!", "red");
+            return;
+        }
+        state.money -= 600;
+        state.trainingLevel++;
+        state.reputation = Math.min(100, state.reputation + 5);
+        addLog(`🎓 Equipe certificada no curso NIC.br (Nível ${state.trainingLevel})!`, "emerald");
+        showToast(`🎓 Certificação NIC.br Nível ${state.trainingLevel} concluída!`, "emerald");
+        renderAll();
+    }
+
+    function buyLicense(level, cost, reqClients, reqRep) {
+        if (state.licenseLevel >= level) return;
+        if (state.clients < reqClients || state.reputation < reqRep) {
+            showToast(`❌ Exige ${reqClients} clientes ativos e ${reqRep}% reputação!`, "red");
+            return;
+        }
+        if (state.money < cost) {
+            showToast(`❌ Saldo insuficiente (R$ ${cost})!`, "red");
+            return;
+        }
+        state.money -= cost;
+        state.licenseLevel = level;
+        addLog(`🏆 Outorga Anatel Nível ${level} conquistada!`, "emerald");
+        showToast(`🏆 Licença Nível ${level} Desbloqueada!`, "emerald");
+        renderAll();
+    }
+
+    function takeLoan(amount) {
+        if (state.loanDebt >= 8000) {
+            showToast("❌ Limite de crédito bancário atingido!", "red");
+            return;
+        }
+        state.money += amount;
+        state.loanDebt += amount;
+        addLog(`💳 Empréstimo bancário liberado: +R$ ${amount}.`, "amber");
+        renderAll();
+    }
+
+    function payLoan(amount) {
+        if (state.loanDebt <= 0) return;
+        const payVal = Math.min(amount, state.loanDebt);
+        if (state.money < payVal) {
+            showToast("❌ Saldo insuficiente para amortizar!", "red");
+            return;
+        }
+        state.money -= payVal;
+        state.loanDebt -= payVal;
+        addLog(`🏦 Dívida bancária amortizada em R$ ${payVal}.`, "emerald");
+        renderAll();
+    }
+
+    function checkGameOver() {
+        if (state.money < -4000) {
+            setSpeed(0);
+            document.getElementById('go-days').innerText = (state.month - 1) * 30 + state.day;
+            document.getElementById('go-clients').innerText = state.peakClients;
+            document.getElementById('go-olt-arch').innerText = state.oltArchName;
+            document.getElementById('gameover-modal').classList.remove('hidden');
+        }
+    }
+
+    // ==========================================================================
+    // NAVEGAÇÃO ENTRE ABAS E RENDERIZAÇÃO DA INTERFACE
+    // ==========================================================================
+    function switchTab(tabName) {
+        ['hq', 'noc', 'map', 'callcenter', 'email'].forEach(t => {
+            document.getElementById(`tab-${t}`).classList.add('hidden');
+            document.getElementById(`tab-btn-${t}`).classList.remove('active');
+        });
+        document.getElementById(`tab-${tabName}`).classList.remove('hidden');
+        document.getElementById(`tab-btn-${tabName}`).classList.add('active');
+        renderAll();
+    }
+
+    function updateTopBadges() {
+        const unread = state.emails.filter(e => !e.read).length;
+        const emailBadge = document.getElementById('badge-email-count');
+        emailBadge.innerText = unread;
+        emailBadge.style.display = unread > 0 ? 'inline-block' : 'none';
+
+        const tCount = state.ticketsList.length;
+        const ticketBadge = document.getElementById('badge-ticket-count');
+        ticketBadge.innerText = tCount;
+        ticketBadge.style.display = tCount > 0 ? 'inline-block' : 'none';
+
+        document.getElementById('badge-map-alert').classList.toggle('hidden', !state.zones.some(z => z.broken));
+        document.getElementById('badge-olt-alert').classList.toggle('hidden', !state.ponSlots.some(s => s.packetLoss > 0));
+        document.getElementById('tab-olt-arch').innerText = `${state.ponCapacityPerCard}/PON`;
+    }
+
+    function renderAll() {
+        document.getElementById('ui-month').innerText = state.month;
+        document.getElementById('ui-day').innerText = state.day;
+        document.getElementById('ui-hour').innerText = `${String(state.hour).padStart(2, '0')}:00`;
+
+        const wIcons = { limpo: '☀️ Sol', chuva: '🌧️ Chuva', tempestade: '⛈️ Tempestade' };
+        document.getElementById('top-weather-pill').innerText = `${wIcons[state.weather]} (Prev: ${wIcons[state.nextWeather]})`;
+
+        const licenseNames = { 1: "📜 Lic. Nv.1: SCM Local", 2: "📜 Lic. Nv.2: FTTH Regional", 3: "📜 Lic. Nv.3: XGS-PON" };
+        document.getElementById('badge-license').innerText = licenseNames[state.licenseLevel];
+
+        const moneyEl = document.getElementById('ui-money');
+        moneyEl.innerText = `R$ ${state.money.toLocaleString('pt-BR')}`;
+        moneyEl.style.color = state.money >= 0 ? 'var(--emerald-bright)' : 'var(--red-bright)';
+
+        const brokenClients = state.zones.filter(z => z.broken).reduce((acc, z) => acc + z.clients, 0);
+        const payingClients = Math.max(0, state.clients - brokenClients - state.defaulters);
+        document.getElementById('ui-daily-rev').innerText = `+R$ ${payingClients * getClientDailyRate()}/dia`;
+
+        const staffCost = state.staff.reduce((acc, s) => acc + s.salary, 0);
+        const linkCost = Math.round((state.linkCapacityMbps / 1000) * 400);
+        document.getElementById('ui-monthly-cost').innerText = `-R$ ${staffCost + linkCost}/mês`;
+
+        document.getElementById('ui-clients').innerText = state.clients;
+        document.getElementById('ui-olt-cap').innerText = getTotalOltCapacity();
+        document.getElementById('ui-olt-per-pon').innerText = `${state.ponCapacityPerCard}/PON`;
+        document.getElementById('ui-clients-cto').innerText = state.clients;
+        document.getElementById('ui-cto-cap').innerText = getTotalCtoCapacity();
+        document.getElementById('ui-reputation-badge').innerText = `⭐ Rep: ${state.reputation}%`;
+
+        document.getElementById('ui-stock-onu').innerText = state.stock.onu;
+        document.getElementById('ui-stock-cto').innerText = state.stock.cto;
+        document.getElementById('ui-stock-fiber').innerText = state.stock.fiber;
+        document.getElementById('ui-stock-parts').innerText = state.stock.parts;
+        document.getElementById('ui-stock-diesel').innerText = `${state.stock.diesel}L`;
+
+        const delivEl = document.getElementById('ui-delivery-timer');
+        const progWrap = document.getElementById('ui-container-progress-wrap');
+        if (state.pendingDelivery) {
+            delivEl.classList.remove('hidden');
+            progWrap.classList.remove('hidden');
+            delivEl.innerText = `🚢 ${state.pendingDelivery.daysLeft}d`;
+            document.getElementById('ui-container-days').innerText = `${state.pendingDelivery.daysLeft}d`;
+            const pct = Math.max(15, Math.round(((state.pendingDelivery.totalDays - state.pendingDelivery.daysLeft) / state.pendingDelivery.totalDays) * 100));
+            document.getElementById('ui-container-bar').style.width = `${pct}%`;
+        } else {
+            delivEl.classList.add('hidden');
+            progWrap.classList.add('hidden');
+        }
+
+        const tempBadge = document.getElementById('ui-temp-badge');
+        tempBadge.innerText = `🌡️ ${state.rackTemp}°C`;
+        tempBadge.style.color = state.rackTemp <= 35 ? 'var(--cyan-bright)' : (state.rackTemp <= 42 ? 'var(--amber-bright)' : 'var(--red-bright)');
+
+        const powerBar = document.getElementById('ui-power-bar');
+        const powerText = document.getElementById('ui-power-text');
+        powerBar.style.width = `${state.powerPct}%`;
+        powerText.innerText = `${state.powerPct}% (${state.gridPowerOk ? 'Rede AC' : 'Gerador/Bat!'})`;
+        powerBar.style.background = state.powerPct > 50 ? '#84cc16' : '#ef4444';
+
+        document.getElementById('btn-gen-toggle').innerText = `⚙️ Gerador: ${state.generatorMode.toUpperCase()}`;
+
+        const usedMbps = getUsedBandwidthMbps();
+        const trafficPct = Math.min(100, Math.round((usedMbps / state.linkCapacityMbps) * 100));
+        const trafficBar = document.getElementById('ui-traffic-bar');
+        document.getElementById('ui-traffic-text').innerText = `${usedMbps} / ${state.linkCapacityMbps} Mbps`;
+        trafficBar.style.width = `${trafficPct}%`;
+        trafficBar.style.background = trafficPct > 85 ? 'var(--amber)' : 'var(--emerald)';
+
+        const anyBreak = state.zones.some(z => z.broken);
+        let ping = 9 + Math.round(trafficPct / 9) + (state.rackTemp > 42 ? 35 : 0) + (trafficPct > 85 ? 45 : 0);
+        if (anyBreak) ping = 170;
+        const pingBadge = document.getElementById('ui-ping-badge');
+        pingBadge.innerText = `${ping} ms`;
+        pingBadge.style.color = ping < 35 ? 'var(--emerald-bright)' : (ping < 90 ? 'var(--amber-bright)' : 'var(--red-bright)');
+
+        document.getElementById('ui-queue-badge').innerText = `${state.queue.length} na fila`;
+        document.getElementById('ui-defaulters').innerText = state.defaulters;
+        const provList = document.getElementById('provisioning-list');
+        if (state.queue.length === 0) {
+            provList.innerHTML = `<div style="font-size: 11.5px; color: var(--text-dim); text-align: center; padding: 14px 0;">Aguardando novos contratos...</div>`;
+        } else {
+            provList.innerHTML = state.queue.map((item, i) => `
+                <div class="inner-box flex-between" style="padding: 7px 9px;">
+                    <div style="overflow: hidden;">
+                        <div style="font-weight: 700; color: #fff; font-size: 11.5px;">${i === 0 ? '🔓 ' : '🔒 '}${item.name}</div>
+                        <div style="font-size: 10px; color: var(--text-muted);">${item.plan} • ${item.zone}</div>
+                    </div>
+                    ${i === 0 ? `<span class="badge" style="color: var(--emerald-bright); border-color: var(--emerald);">Pronto</span>` : ''}
+                </div>
+            `).join('');
+        }
+
+        const breaksCount = state.zones.filter(z => z.broken).length;
+        const breaksBadge = document.getElementById('ui-breaks-badge');
+        breaksBadge.innerText = breaksCount > 0 ? `${breaksCount} Rompimento(s)!` : 'Rede Íntegra';
+        breaksBadge.style.color = breaksCount > 0 ? 'var(--red-bright)' : 'var(--emerald-bright)';
+        document.getElementById('ui-support-tickets').innerText = state.ticketsList.length;
+
+        updateTopBadges();
+        renderHqTab();
+        renderNocTab();
+        renderMapTab();
+        renderCallCenterTab();
+        renderEmailTab();
+    }
+
+    function renderHqTab() {
+        const installedCards = state.ponSlots.filter(s => s.installed).length;
+        document.getElementById('hq-noc-level').innerText = `Ar-Cond. Nv.${state.acLevel}`;
+        document.getElementById('hq-rack-slots').innerText = `${installedCards}/4 PON (${state.ponCapacityPerCard}p)`;
+        document.getElementById('hq-ac-temp').innerText = `Temp: ${state.rackTemp}°C`;
+        document.getElementById('hq-gen-fuel').innerText = `Diesel: ${state.stock.diesel}L`;
+
+        const agents = state.staff.filter(s => s.role === 'agent').length;
+        const techs = state.staff.filter(s => s.role === 'tech').length;
+        document.getElementById('hq-cc-desks').innerText = `${agents}/${state.ccDesks} Baias`;
+        document.getElementById('hq-cc-agents').innerText = `${agents} Operador(es)`;
+        document.getElementById('hq-cc-tickets').innerText = `${state.ticketsList.length} Chamado(s)`;
+
+        document.getElementById('hq-wh-onu').innerText = `${state.stock.onu} ONU | ${state.stock.cto} CTO`;
+        document.getElementById('hq-wh-fiber').innerText = `${state.stock.fiber} Bobinas`;
+        document.getElementById('hq-wh-ship').innerText = state.pendingDelivery ? `Chega em ${state.pendingDelivery.daysLeft}d` : 'Doca Livre';
+
+        document.getElementById('hq-boat-cond').innerText = `Motor: ${state.boatHealth}%`;
+        document.getElementById('hq-field-techs').innerText = `${techs} Técnico(s)`;
+    }
+
+    function renderNocTab() {
+        document.getElementById('olt-chassis-temp').innerText = `🌡️ CHASSIS: ${state.rackTemp}°C`;
+        document.getElementById('noc-arch-badge').innerText = `${state.oltArchName} (${state.ponCapacityPerCard} Clientes/PON)`;
+        document.getElementById('btn-pon-cap-label').innerText = `+${state.ponCapacityPerCard} Vagas`;
+        document.getElementById('rack-olt-title').innerText = `OLT ${state.oltArchName} (${state.ponCapacityPerCard} CLIENTES / PON)`;
+        document.getElementById('rack-total-cap-badge').innerText = `Cap Total: ${getTotalOltCapacity()}`;
+
+        const btn128 = document.getElementById('btn-upg-128');
+        const btn256 = document.getElementById('btn-upg-256');
+        if (state.ponCapacityPerCard >= 128) {
+            btn128.innerText = "✅ Splitter 1:128 Ativo";
+            btn128.className = "btn btn-emerald";
+        }
+        if (state.ponCapacityPerCard >= 256) {
+            btn256.innerText = "✅ XGS-PON 256/PON Ativo";
+            btn256.className = "btn btn-emerald";
+        }
+
+        const container = document.getElementById('olt-slots-container');
+        container.innerHTML = state.ponSlots.map((slot, idx) => {
+            const isSelected = state.selectedPonSlot === idx;
+            const zone = state.zones[slot.zoneIndex];
+            const borderCol = isSelected ? 'border-color: var(--cyan-bright);' : '';
+            if (!slot.installed) {
+                return `
+                    <div onclick="selectPonSlot(${idx})" class="inner-box flex-between" style="cursor: pointer; ${borderCol} opacity: 0.65;">
+                        <span class="mono" style="font-size: 11px; color: var(--text-muted);">SLOT PON #${slot.id} — [SLOT VAZIO • Suporta ${state.ponCapacityPerCard} ONUs]</span>
+                        <span class="led led-off"></span>
+                    </div>
+                `;
+            }
+
+            let ledClass = 'led-green';
+            let statusLabel = 'PON OK';
+            if (zone && zone.broken) {
+                ledClass = 'led-red';
+                statusLabel = 'LOS CRÍTICO';
+            } else if (slot.packetLoss > 0 || slot.clients >= slot.capacity * 0.88) {
+                ledClass = 'led-orange';
+                statusLabel = slot.packetLoss > 0 ? `PERDA ${slot.packetLoss}%` : 'ALTA CARGA';
+            }
+
+            return `
+                <div onclick="selectPonSlot(${idx})" class="inner-box flex-between" style="cursor: pointer; ${borderCol}">
+                    <div>
+                        <div class="mono" style="font-weight: 800; color: #fff; font-size: 11.5px;">SLOT PON #${slot.id} (${state.oltArchName})</div>
+                        <div style="font-size: 10.5px; color: var(--text-muted);">Clientes Provisionados: <strong style="color: var(--cyan-bright);">${slot.clients} / ${slot.capacity}</strong></div>
+                    </div>
+                    <div class="flex-center">
+                        <span class="mono" style="font-size: 10.5px;">${statusLabel}</span>
+                        <span class="led ${ledClass}"></span>
+                    </div>
+                </div>
+            `;
+        }).join('');
+
+        const selSlot = state.ponSlots[state.selectedPonSlot];
+        const selZone = state.zones[selSlot.zoneIndex];
+        document.getElementById('insp-slot-id').innerText = `SLOT #${selSlot.id}`;
+        document.getElementById('insp-splitter').innerText = `Splitter 1:${state.ponCapacityPerCard}`;
+        if (!selSlot.installed) {
+            document.getElementById('insp-status').innerText = "DESCONECTADO";
+            document.getElementById('insp-status').style.color = "var(--text-dim)";
+            document.getElementById('insp-dbm').innerText = "-- dBm";
+            document.getElementById('insp-onus').innerText = `0 / ${state.ponCapacityPerCard}`;
+            document.getElementById('insp-loss').innerText = "0.0%";
+        } else {
+            const isBroken = selZone && selZone.broken;
+            document.getElementById('insp-status').innerText = isBroken ? "LOS (ROMPIMENTO)" : "LASER ONLINE";
+            document.getElementById('insp-status').style.color = isBroken ? "var(--red-bright)" : "var(--emerald-bright)";
+            document.getElementById('insp-dbm').innerText = isBroken ? "-40.0 dBm (Sem Luz)" : (selSlot.packetLoss > 0 ? "-27.4 dBm (Atenuado)" : "-18.9 dBm (Ideal)");
+            document.getElementById('insp-onus').innerText = `${selSlot.clients} / ${selSlot.capacity} ONUs`;
+            document.getElementById('insp-loss').innerText = `${selSlot.packetLoss}.0%`;
+        }
+    }
+
+    function renderMapTab() {
+        document.getElementById('map-boat-pct').innerText = `${state.boatHealth}%`;
+
+        state.zones.forEach((z, idx) => {
+            const line = document.getElementById(`svg-line-${idx + 1}`);
+            const node = document.getElementById(`svg-node-${idx}`);
+            if (!line || !node) return;
+
+            if (!z.unlocked) {
+                line.setAttribute('stroke', '#334155');
+                line.setAttribute('class', '');
+                node.setAttribute('stroke', '#475569');
+            } else if (z.broken) {
+                line.setAttribute('stroke', '#ef4444');
+                line.setAttribute('class', '');
+                node.setAttribute('stroke', '#ef4444');
+            } else {
+                line.setAttribute('stroke', '#22c55e');
+                line.setAttribute('class', 'fiber-line-active');
+                node.setAttribute('stroke', '#22c55e');
+            }
+        });
+
+        const grid = document.getElementById('map-zones-grid');
+        grid.innerHTML = state.zones.map(z => {
+            if (!z.unlocked) {
+                return `
+                    <div class="inner-box flex-between">
+                        <div>
+                            <div style="font-weight: 800; color: var(--text-muted);">🔒 ${z.name}</div>
+                            <div style="font-size: 10.5px; color: var(--text-dim);">Req: Lic. Nv.${z.reqLicense} + 1 Fibra + 1 CTO</div>
+                        </div>
+                        <button onclick="unlockZone(${z.id})" class="btn btn-cyan">Ativar (R$${z.unlockCost})</button>
+                    </div>
+                `;
+            }
+
+            return `
+                <div class="inner-box flex-between" style="${z.broken ? 'border-color: var(--red);' : ''}">
+                    <div>
+                        <div class="flex-center" style="font-weight: 800; color: #fff;">
+                            <span>${z.river ? '🚤' : '📡'} ${z.name}</span>
+                            <span class="mono" style="font-size: 10px; color: var(--cyan-bright);">(${z.ctosCount} CTOs)</span>
+                        </div>
+                        <div style="font-size: 10.5px; color: var(--text-muted);">Vagas CTO: <strong style="color: #fff;">${z.clients}/${z.ctoPorts}</strong> • Sinal: <span class="mono" style="color: var(--emerald-bright);">${z.dbm} dBm</span></div>
+                    </div>
+                    ${z.broken ? `
+                        <button onclick="dispatchFieldTech()" class="btn btn-red">🔧 Reparar (R$50)</button>
+                    ` : `
+                        <button onclick="expandZoneCto(${z.id})" class="btn btn-emerald">+CTO (+16p)</button>
+                    `}
+                </div>
+            `;
+        }).join('');
+    }
+
+    function renderCallCenterTab() {
+        ['popular', 'padrao', 'premium'].forEach(p => {
+            const el = document.getElementById(`price-card-${p}`);
+            el.style.borderColor = state.pricingPolicy === p ? 'var(--cyan-bright)' : 'var(--border-bright)';
+        });
+
+        const demandText = {
+            popular: `🔥 Demanda: Muito Alta (R$ ${getClientDailyRate()}/dia por cliente)`,
+            padrao: `✅ Demanda: Equilibrada (R$ ${getClientDailyRate()}/dia por cliente)`,
+            premium: `💎 Demanda: Seletiva VIP (R$ ${getClientDailyRate()}/dia por cliente)`
+        };
+        document.getElementById('ui-demand-label').innerText = demandText[state.pricingPolicy];
+
+        const agents = state.staff.filter(s => s.role === 'agent').length;
+        document.getElementById('cc-agent-power').innerText = `Atendimento Automático: ${Math.min(agents, state.ccDesks)} chamado(s)/turno`;
+
+        const list = document.getElementById('tickets-list-container');
+        if (state.ticketsList.length === 0) {
+            list.innerHTML = `<div style="text-align: center; padding: 24px; color: var(--text-muted);">🎉 Nenhum chamado técnico pendente! Clientes satisfeitos.</div>`;
+        } else {
+            list.innerHTML = state.ticketsList.map(t => `
+                <div class="inner-box flex-between">
+                    <div>
+                        <span class="mono" style="color: var(--purple-bright); font-weight: 700;">#${t.id}</span>
+                        <strong style="color: #fff; margin-left: 6px;">${t.client}:</strong>
+                        <span style="color: var(--text-muted); margin-left: 6px;">${t.issue}</span>
+                    </div>
+                    <button onclick="resolveSingleTicket(${t.id})" class="btn btn-purple">Resolver Remoto</button>
+                </div>
+            `).join('');
+        }
+    }
+
+    function renderEmailTab() {
+        const listEl = document.getElementById('email-list');
+        listEl.innerHTML = state.emails.map(e => `
+            <div onclick="selectEmail(${e.id})" class="inner-box" style="cursor: pointer; ${state.selectedEmailId === e.id ? 'border-color: var(--cyan-bright); background: #152238 !important;' : ''}">
+                <div class="flex-between" style="font-size: 10px; color: var(--text-muted); margin-bottom: 3px;">
+                    <span style="font-weight: 700; color: ${!e.read ? 'var(--cyan-bright)' : 'var(--text-muted)'};">${!e.read ? '● ' : ''}${e.sender}</span>
+                    <span>${e.acted ? '✓ Concluído' : 'Novo'}</span>
+                </div>
+                <div style="font-weight: 700; color: #fff; font-size: 11.5px;">${e.subject}</div>
+            </div>
+        `).join('');
+
+        const viewer = document.getElementById('email-viewer');
+        const sel = state.emails.find(e => e.id === state.selectedEmailId);
+        if (sel) {
+            let actionBtn = '';
+            if (!sel.acted) {
+                if (sel.type === 'supplier') actionBtn = `<button onclick="actOnEmail(${sel.id})" class="btn btn-emerald" style="width: 100%; padding: 9px;">🚢 Encomendar Contêiner Asiático (R$ ${sel.cost})</button>`;
+                else if (sel.type === 'cv') actionBtn = `<button onclick="actOnEmail(${sel.id})" class="btn btn-cyan" style="width: 100%; padding: 9px;">✍️ Contratar Profissional (R$ ${sel.candidate.salary}/mês)</button>`;
+                else if (sel.type === 'vip') actionBtn = `<button onclick="actOnEmail(${sel.id})" class="btn btn-amber" style="width: 100%; padding: 9px;">⚡ Ativar Link Dedicado VIP (+R$ ${sel.bonus})</button>`;
+            } else {
+                actionBtn = `<div class="badge" style="width: 100%; justify-content: center; padding: 8px; color: var(--emerald-bright);">✅ Solicitação Concluída</div>`;
+            }
+
+            viewer.innerHTML = `
+                <div>
+                    <div style="border-bottom: 1px solid var(--border-subtle); padding-bottom: 8px; margin-bottom: 10px;">
+                        <div style="font-size: 11px; color: var(--text-muted);">De: <strong style="color: #fff;">${sel.sender}</strong></div>
+                        <div style="font-size: 13px; font-weight: 800; color: #fff;">${sel.subject}</div>
+                    </div>
+                    <div style="white-space: pre-line; font-size: 12px; color: var(--text-main); line-height: 1.5;">${sel.body}</div>
+                </div>
+                <div style="margin-top: 12px;">${actionBtn}</div>
+            `;
+        }
+
+        document.getElementById('ui-training-lvl').innerText = `Certificação Nv. ${state.trainingLevel}`;
+        document.getElementById('staff-roster-list').innerHTML = state.staff.map(s => `
+            <div class="inner-box flex-between">
+                <div>
+                    <div style="font-weight: 800; color: #fff;">${s.role === 'tech' ? '👷' : '🎧'} ${s.name}</div>
+                    <div style="font-size: 10.5px; color: var(--emerald-bright);">+ ${s.traitPos} <span style="color: var(--text-dim);">• ${s.traitNeg}</span></div>
+                </div>
+                <span class="mono" style="font-weight: 800; color: var(--amber-bright);">R$${s.salary}</span>
+            </div>
+        `).join('');
+
+        const licenses = [
+            { level: 1, title: "Nv.1: Outorga SCM Inicial", reqClients: 0, reqRep: 0, cost: 0, desc: "Operação nos bairros urbanos iniciais. Base: R$ 22/dia." },
+            { level: 2, title: "Nv.2: Expansão FTTH & Ilha", reqClients: 20, reqRep: 80, cost: 1600, desc: "Libera Distrito Industrial e Vila Ribeirinha (Base: R$ 30/dia)." },
+            { level: 3, title: "Nv.3: Operador XGS-PON & Floresta", reqClients: 45, reqRep: 85, cost: 3200, desc: "Libera Comunidade da Floresta e planos Gigabit (Base: R$ 40/dia)." }
+        ];
+
+        document.getElementById('licenses-container').innerHTML = licenses.map(lic => {
+            const owned = state.licenseLevel >= lic.level;
+            return `
+                <div class="sector-card" style="${owned ? 'border-color: var(--emerald);' : ''}">
+                    <div>
+                        <div style="font-weight: 800; color: ${owned ? 'var(--emerald-bright)' : '#fff'}; margin-bottom: 4px;">${lic.title}</div>
+                        <p style="font-size: 11px; color: var(--text-muted); margin-bottom: 6px;">${lic.desc}</p>
+                        ${lic.level > 1 ? `<div class="mono" style="font-size: 10px; color: var(--amber-bright);">Req: ${lic.reqClients} Clientes | ${lic.reqRep}% Rep.</div>` : ''}
+                    </div>
+                    ${owned ? `<div class="badge" style="justify-content: center; color: var(--emerald-bright);">✅ OUTORGA ATIVA</div>` : `<button onclick="buyLicense(${lic.level}, ${lic.cost}, ${lic.reqClients}, ${lic.reqRep})" class="btn btn-amber" style="width: 100%;">Certificar (R$ ${lic.cost})</button>`}
+                </div>
+            `;
+        }).join('');
+
+        document.getElementById('ui-loan-debt').innerText = `R$ ${state.loanDebt.toLocaleString('pt-BR')}`;
+        const bgpFinance = document.getElementById('ui-bgp-finance-status');
+        if (state.money < 0) {
+            bgpFinance.innerText = `⚠️ Caixa Negativo! Risco de Corte em -R$ 4.000`;
+            bgpFinance.style.color = "var(--red-bright)";
+        } else {
+            bgpFinance.innerText = "Faturas em Dia (Sinal Garantido)";
+            bgpFinance.style.color = "var(--emerald-bright)";
+        }
+    }
+
+    // Inicializa carregando save se existir
+    window.addEventListener('DOMContentLoaded', () => {
+        try {
+            const saved = localStorage.getItem(STORAGE_KEY);
+            if (saved) {
+                const parsed = JSON.parse(saved);
+                Object.assign(state, parsed);
+            }
+        } catch (e) {}
+        renderAll();
+    });
+</script>
+</body>
+</html>
